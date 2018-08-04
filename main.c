@@ -11,7 +11,7 @@
 #include <printhex.h>
 #include <stdbool.h>
 
-#define VERSION "1.11.3" // --Exit codes fixed
+#define VERSION "1.11.4"
 
 int FixFrame(ID3V2 *id3v2, const unsigned int ID);
 int CopyArgument(char **dst, char *src);
@@ -329,7 +329,7 @@ int ProcessSetArgument(ID3V2 *id3v2, const unsigned int ID, char *argument)
                     }
 
                     error = ID3V2_SetPictureFrame(id3v2, 0x03 /*front cover*/, 
-                                                  "image/jpg", NULL, picture, picsize);
+                                                  "image/jpeg", NULL, picture, picsize);
                     SafeFree(picture);
                     if(error)
                     {

@@ -1,3 +1,4 @@
+1.11.4 - Changed mime-type for artwork (--set-artwork) from image/jpg to image/jpeg to make it standard conform
 1.11.3 - Fixed the exit-codes by using constant names from stdlib instead of magic numbers
 1.11.2 - Improved the code to compile with clang with less warnings
 1.11.1 - Print version number in plain text without ANSI escape sequences
