@@ -130,7 +130,7 @@ The invalid frame can simply be fixed by calling `id3edit --set-name "Stay Krän
 
 #### Check the TCON problem
 
-Just for demonstration lets see whats wrong with the `TCON` frame (A comment frame. That is the reason I did not further support it in _id3edit_).
+Just for demonstration lets see whats wrong with the `TCON` frame (Content Type - The genre of a song)
 
 ![Hex dump of a comment frame](screenshots/04.jpg?raw=true)
 
