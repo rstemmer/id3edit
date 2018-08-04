@@ -173,7 +173,7 @@ Shortcuts:
  
  * `id3show $FILE`: `id3edit --readonly --get-all $FILE`
  * `id3frames $FILE`: `id3edit --readonly --get-framelist $FILE`
- * `id3dump $FRAMEID $FILE`: id3edit --readonly --dump $FRAMEID $FILE`
+ * `id3dump $FRAMEID $FILE`: `id3edit --readonly --dump $FRAMEID $FILE`
 
 ## Contribute
 
