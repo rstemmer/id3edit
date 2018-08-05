@@ -63,6 +63,7 @@ typedef struct
 {
     char *path;     // path of the filename
     FILE *file;     // file pointer
+    bool rawmp3;    // true when there was no ID3 header in the file before
     
     ID3V2_HEADER    header;    // Header of the ID3 information
     ID3V2_EXTHEADER extheader; // Extended Header

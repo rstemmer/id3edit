@@ -1,3 +1,4 @@
+1.11.5 - Fixed a critical bug loosing 10 bytes when creating a ID3 Tag for a raw mp3 file
 1.11.4 - Changed mime-type for artwork (--set-artwork) from image/jpg to image/jpeg to make it standard conform
 1.11.3 - Fixed the exit-codes by using constant names from stdlib instead of magic numbers
 1.11.2 - Improved the code to compile with clang with less warnings

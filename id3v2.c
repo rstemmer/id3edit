@@ -124,10 +124,11 @@ int ID3V2_Open(ID3V2 **id3v2, const char *path, bool createtag)
             id3->header.ID[0]         = 'I';
             id3->header.ID[1]         = 'D';
             id3->header.ID[2]         = '3';
-            id3->header.version_major = 3;  // \_ version 2.3.0
-            id3->header.version_minor = 0;  // /
-            id3->header.flags         = 0;  // No flags
-            id3->header.origsize      = 0;  // No frames
+            id3->header.version_major = 3;      // \_ version 2.3.0
+            id3->header.version_minor = 0;      // /
+            id3->header.flags         = 0;      // No flags
+            id3->header.origsize      = 0;      // No frames
+            id3->rawmp3               = true;   // there was no ID3 Tag before
             // Reverse previous attempts to read the ID3 header
             fseek(id3->file, 0, SEEK_SET);  
         }
@@ -144,6 +145,11 @@ int ID3V2_Open(ID3V2 **id3v2, const char *path, bool createtag)
             return ID3V2ERROR_NOTSUPPORTED;
         }
     }
+    else
+    {
+        id3->rawmp3 = false; // there is a valid ID3 tag in the source file
+    }
+
     if(id3->header.flags != 0)
     {
         fprintf(stderr, "Unsupported flags detected. Set flags are: 0x%02X\n", id3->header.flags);
@@ -424,7 +430,15 @@ int ID3V2_Close(ID3V2 *id3v2, const char *altpath)
         // copy audio data to the new file
         // jump to the end of the ID3 infos in the orig file
         // the 10 is for the main header, old/orig size is used because the source has the orig structure
-        fseek(id3->file, id3->header.origsize + 10, SEEK_SET);
+#ifdef DEBUG
+        printf("\e[1;34mHeader sized: \e[0;33mOrig: \e[0;36m%i \e[0;32mNew: \e[0;36m%i\n\e[0m", 
+                id3->header.origsize, id3->header.realsize);
+#endif
+        if(id3->rawmp3) // mp3 data starts at position 0
+            fseek(id3->file,                         0, SEEK_SET);
+        else            // mp3 data starts at the end of the ID3 tag (+10 for the ID3 Tag Header)
+            fseek(id3->file, id3->header.origsize + 10, SEEK_SET);
+
         int data;
         while((data = getc(id3->file)) != EOF)
             fputc(data, dstfile);
