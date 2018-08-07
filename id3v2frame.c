@@ -232,19 +232,20 @@ int ID3V2_GetPictureFrame(ID3V2 *id3v2, const unsigned char pictype,
     rawoffset += 1; // pictype
 
     // text description SPEC SAYS: (raw data: max 64 chars + '\0[\0]' -> max 65*2 bytes = 130bytes)
-    unsigned char *desctext; // utf-8 encoded \0-terminated string
-    int            descsize; // number of bytes of the original description in the file (for offset calculation)
-    if(encoding == 0x00) // ISO 8859-1
+    const int     MAXDESCCHARS = 64+1;  // never forget the '\0'
+    unsigned char *desctext;            // utf-8 encoded \0-terminated string
+    int           descsize;             // number of bytes of the original description in the file (for offset calculation)
+    if(encoding == ID3V2TEXTENCODING_ISO8859_1) // ISO 8859-1
     {
         // extract raw data
         char *descdata;
-        descdata = malloc(sizeof(char)*65); // just alloc max length
+        descdata = malloc(sizeof(char) * MAXDESCCHARS); // just alloc max length
         if(descdata == NULL)
         {
             fprintf(stderr, "Fatal Error! - malloc returned NULL!\n");
             return ID3V2ERROR_FATAL;
         }
-        strncpy(descdata, (char*)(rawbytes + rawoffset), 65);
+        strncpy(descdata, (char*)(rawbytes + rawoffset), MAXDESCCHARS);
         descsize   = strlen(descdata) + 1; // number of bytes of the description for offset calculation 
         rawoffset += descsize;
 
@@ -257,11 +258,11 @@ int ID3V2_GetPictureFrame(ID3V2 *id3v2, const unsigned char pictype,
         }
         free(descdata); // raw data not needed anymore
     }
-    else // UTF-8
+    else if(encoding == ID3V2TEXTENCODING_UTF16_BOM)// UTF-16
     {
         // extract raw data
         unsigned short *descdata;
-        descdata = malloc(sizeof(char)*130); // just alloc max length
+        descdata = malloc(sizeof(char)* 2*MAXDESCCHARS); // just alloc max length (1 Character = 2 Bytes)
         if(descdata == NULL)
         {
             fprintf(stderr, "Fatal Error! - malloc returned NULL!\n");
@@ -272,7 +273,7 @@ int ID3V2_GetPictureFrame(ID3V2 *id3v2, const unsigned char pictype,
         unsigned short BOM     = *(unsigned short*)(rawbytes + rawoffset);
         rawoffset             += 2; // BOM
         unsigned short *source =  (unsigned short*)(rawbytes + rawoffset);
-        for(int i=0; i<65; i++) // max 64 chars + '\0\0'
+        for(int i=0; i<MAXDESCCHARS; i++) // max 64 chars + '\0\0'
         {
             descdata[i] = source[i];
             descsize   += 2; // 2 bytes per char
@@ -290,9 +291,58 @@ int ID3V2_GetPictureFrame(ID3V2 *id3v2, const unsigned char pictype,
         }
         free(descdata); // raw data not needed anymore
     }
+    else if(encoding == ID3V2TEXTENCODING_UTF16_BE)  // utf-16 big endian (and without leading BOM)
+    {
+        // extract raw data
+        unsigned short *descdata;
+        descdata = malloc(sizeof(char)* 2*MAXDESCCHARS); // just alloc max length (1 Character = 2 Bytes)
+        if(descdata == NULL)
+        {
+            fprintf(stderr, "Fatal Error! - malloc returned NULL!\n");
+            return ID3V2ERROR_FATAL;
+        }
+
+        // copy utf-16 DE data
+        unsigned short *source =  (unsigned short*)(rawbytes + rawoffset);
+        for(int i=0; i<MAXDESCCHARS; i++) // max 64 chars + '\0\0'
+        {
+            descdata[i] = source[i];
+            descsize   += 2; // 2 bytes per char
+            if(descdata[i] == 0x0000) break;
+        }
+        rawoffset += descsize;
+
+        // convert to utf-8
+        int utf16length = (descsize-2)/2; // number of chars, '\0\0' excluded
+        error = UTF16toUTF8(&desctext, NULL, descdata, utf16length, UTF16BOM_BE);
+        if(error)
+        {
+            free(descdata);
+            return error;
+        }
+        free(descdata); // raw data not needed anymore
+    }
+    else if(encoding == ID3V2TEXTENCODING_UTF8)  // utf-8
+    {
+        desctext = malloc(sizeof(char)*MAXDESCCHARS); // just alloc max length
+        if(desctext == NULL)
+        {
+            fprintf(stderr, "Fatal Error! - malloc returned NULL!\n");
+            return ID3V2ERROR_FATAL;
+        }
+
+        // extract raw data
+        strncpy((char*)desctext, (char*)(rawbytes + rawoffset), MAXDESCCHARS);
+        descsize   = strlen((char*)desctext) + 1; // number of bytes of the description for offset calculation 
+        rawoffset += descsize;
+    }
+    else // unsupported encoding
+    {
+        fprintf(stderr, "Warning! - Unsupported text encoding (0x%2X) in artwork description.", encoding);
+    }
 
 #ifdef DEBUG
-    if(encoding == 0x01)
+    if(encoding == 0x01 || encoding == 0x02)
     {
         printhex(rawdata, 128, 16, 
             0,                          "\e[1;36m", // encoding

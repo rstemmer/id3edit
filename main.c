@@ -11,12 +11,13 @@
 #include <printhex.h>
 #include <stdbool.h>
 
-#define VERSION "1.11.4"
+#define VERSION "1.12.0"
 
 int FixFrame(ID3V2 *id3v2, const unsigned int ID);
 int CopyArgument(char **dst, char *src);
 int ProcessSetArgument(ID3V2 *id3v2, const unsigned int ID, char *argument);
 int ProcessGetArgument(ID3V2 *id3v2, const unsigned int ID, const char *name);
+int StoreArtwork(ID3V2 *id3v2, char *storepath);
 int ShowFramelist(ID3V2 *id3v2);
 int DumpFrame(ID3V2 *id3v2, char *frameid);
 void SafeFree(void* addr);
@@ -53,6 +54,7 @@ void PrintUsage()
                                                                     "\e[0;35mrelease\e[1;34m,"
                                                                     "\e[0;35mtrack\e[1;34m,"
                                                                     "\e[0;35mcd\e[1;34m}\n");
+    printf("\t\e[1;36m --get-artwork \e[35m path \e[34m Store artwork      \n");
     printf("\t\e[1;36m --get-all     \e[35m      \e[34m Show all Tags      \n");
     printf("\t\e[1;36m --get-framelist\e[35m     \e[34m Show the framelist \n");
     printf("\n");
@@ -120,6 +122,7 @@ int main(int argc, char *argv[])
     char *dumpframe = NULL;
     char *mp3path   = NULL; // path to input file
     char *altpath   = NULL; // path to output file (if NULL, input = output)
+    char *storeaw   = NULL; // path where the artwork from the mp3 file shall be stored
     bool readonly   = false;
     bool createtag  = false;
     bool cleartags  = false;
@@ -164,6 +167,7 @@ int main(int argc, char *argv[])
         GETARG(newrelease, "--set-release")
         GETARG(newtracknr, "--set-track")
         GETARG(newcdnr,    "--set-cd")
+        GETARG(storeaw,    "--get-artwork")
         GETARG(altpath,    "--outfile")
         GETARG(dumpframe,  "--dump")
         
@@ -186,6 +190,7 @@ int main(int argc, char *argv[])
     // Convert relative paths to absolute paths and check access
     if(ValidatePath(&mp3path,    W_OK|R_OK) != 0) goto exit;
     if(ValidatePath(&newartwork,      R_OK) != 0) goto exit;
+    //if(ValidatePath(&storeaw,            0) != 0) goto exit; FIXME: Does not work for non-existing files
 
     // OPEN
     int error;
@@ -197,7 +202,7 @@ int main(int argc, char *argv[])
         goto exit;
     }
 
-    // Process programm arguments
+    // Process program arguments
     if(getframelist) if(ShowFramelist(id3v2)        != 0) goto exit;
     if(dumpframe)    if(DumpFrame(id3v2, dumpframe) != 0) goto exit;
 
@@ -217,6 +222,10 @@ int main(int argc, char *argv[])
     PROCESSGETARGUMENT(getrelease, 'TYER', "\e[0;36m TYER \e[1;34m Release:  \e[36m")
     PROCESSGETARGUMENT(gettracknr, 'TRCK', "\e[0;36m TRCK \e[1;34m Track:    \e[36m")
     PROCESSGETARGUMENT(getcdnr,    'TPOS', "\e[0;36m TPOS \e[1;34m CD:       \e[36m")
+    if(storeaw != NULL)
+    {
+        if(StoreArtwork(id3v2, storeaw) != 0) goto exit;
+    }
 
     // Process some more flags
     if(cleartags) ID3V2_RemoveAllFrames(id3v2);
@@ -260,6 +269,7 @@ exit:
     SafeFree(newtracknr);
     SafeFree(newcdnr);
     SafeFree(mp3path);
+    SafeFree(storeaw);
     return exitcode;
 }
 
@@ -394,6 +404,28 @@ int ProcessGetArgument(ID3V2 *id3v2, const unsigned int ID, const char *name)
             }
     }
 
+    return 0;
+}
+
+//----------------------------------------------------------------------------
+
+int StoreArtwork(ID3V2 *id3v2, char *storepath)
+{
+    char          *mimetype = NULL;
+    void          *picture  = NULL;
+    unsigned int   picsize  = 0;
+    int            error;
+    
+    error = ID3V2_GetPictureFrame(id3v2, 0x03 /*Front Cover*/, &mimetype, NULL, &picture, &picsize);
+    if(error)
+        return -1;
+
+    error = RAWFILE_Write(storepath, picture, picsize);
+    if(error)
+        return -1;
+
+    SafeFree(mimetype);
+    SafeFree(picture);
     return 0;
 }
 
