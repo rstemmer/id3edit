@@ -144,12 +144,11 @@ PrintTest "Add artwork"
 ./id3edit --set-artwork $SRCAW --outfile $DST $SRC
 CheckResult "dba22cda9ec6a901a349403a800e3eb2"
 
-# Not yet in stable state
-#PrintTest "Get artwork"
-#./id3edit --get-artwork $DSTAW $SRC
-#SRCSUM=$(md5sum $SRCAW 2> /dev/null | cut -d " " -f 1)
-#DSTSUM=$(md5sum $DSTAW 2> /dev/null | cut -d " " -f 1)
-#CheckValues $SRCSUM $DSTSUM
+PrintTest "Get artwork"
+./id3edit --get-artwork $DSTAW $DST
+SRCSUM=$(md5sum $SRCAW 2> /dev/null | cut -d " " -f 1)
+DSTSUM=$(md5sum $DSTAW 2> /dev/null | cut -d " " -f 1)
+CheckValues $SRCSUM $DSTSUM
 
 
 echo -e "\n\e[1;37mRemoving tests …\e[0m"

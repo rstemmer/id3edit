@@ -273,6 +273,7 @@ int ID3V2_GetPictureFrame(ID3V2 *id3v2, const unsigned char pictype,
         unsigned short BOM     = *(unsigned short*)(rawbytes + rawoffset);
         rawoffset             += 2; // BOM
         unsigned short *source =  (unsigned short*)(rawbytes + rawoffset);
+        descsize               = 0;
         for(int i=0; i<MAXDESCCHARS; i++) // max 64 chars + '\0\0'
         {
             descdata[i] = source[i];
@@ -304,6 +305,7 @@ int ID3V2_GetPictureFrame(ID3V2 *id3v2, const unsigned char pictype,
 
         // copy utf-16 DE data
         unsigned short *source =  (unsigned short*)(rawbytes + rawoffset);
+        descsize               = 0;
         for(int i=0; i<MAXDESCCHARS; i++) // max 64 chars + '\0\0'
         {
             descdata[i] = source[i];
