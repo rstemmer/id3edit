@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-SOURCE=$(find . -type f -name "*.c")
+SOURCE=$(find . -type f ! -path './test/*' -name "*.c")
 HEADER="-I."
 LIBS="-lprinthex"
 
@@ -11,7 +11,7 @@ do
 done
 
 
-OBJECTS=$(find . -type f -name "*.o")
+OBJECTS=$(find . -type f ! -path './test/*' -name "*.o")
 
 clang -o id3edit $OBJECTS $LIBS
 
