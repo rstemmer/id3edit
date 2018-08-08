@@ -3,8 +3,8 @@
 
 #define ID3V2TEXTENCODING_ISO8859_1 0x00    /* 0x20 … 0xFF */
 #define ID3V2TEXTENCODING_UTF16_BOM 0x01    /* utf-16 starting with an byte order mark */
-#define ID3V2TEXTENCODING_UTF16_BE  0x02    /* utf-16 big endian */
-#define ID3V2TEXTENCODING_UTF8      0x03    /* utf-8 */
+#define ID3V2TEXTENCODING_UTF16_BE  0x02    /* utf-16 big endian (ID3v2.4.0) */
+#define ID3V2TEXTENCODING_UTF8      0x03    /* utf-8             (ID3v2.4.0) */
 
 #define ID3V2_GetTitle(i,s,t)  ID3V2_GetTextFrame(i, 'TIT2', s, t)
 #define ID3V2_GetAlbum(i,s,t)  ID3V2_GetTextFrame(i, 'TALB', s, t)
