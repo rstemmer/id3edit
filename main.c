@@ -439,7 +439,11 @@ int ShowFramelist(ID3V2 *id3v2)
 
     // start printing frames
     ID3V2_FRAME *frame;
-    frame = id3v2->framelist;
+    unsigned char majorversion;
+
+    frame        = id3v2->framelist;
+    majorversion = id3v2->header.version_major;
+
     while(frame)
     {
         // print ID - color shall indicate if supported or not
@@ -476,17 +480,21 @@ int ShowFramelist(ID3V2 *id3v2)
             // encoding
             unsigned char encoding;
             encoding = data[0];
-            if(encoding == 0x00) // ISO 8859-1
+            if(encoding == ID3V2TEXTENCODING_ISO8859_1)
                 printf("\e[1;30m ISO 8859-1 ");
-            else if(encoding == 0x01)
+            else if(encoding == ID3V2TEXTENCODING_UTF16_BOM)
                 printf("\e[1;34m UTF-16 "); // 4 byte space for byteorder ("LE  ", "BE  ")
+            else if(encoding == ID3V2TEXTENCODING_UTF16_BE)
+                printf("\e[1;34m UTF-16BE ");
+            else if(encoding == ID3V2TEXTENCODING_UTF8)
+                printf("\e[1;34m UTF-8 ");
             else
                 printf("\e[1;31m Invalid!   ");
 
             // BOM if UTF-16
-            if(encoding == 0x01)
+            if(encoding == ID3V2TEXTENCODING_UTF16_BOM)
             {
-                unsigned short *utf16data = (unsigned short*)&data[1];
+                unsigned short *utf16data;
                 unsigned short byteorder;
                 utf16data = (unsigned short*)&data[1];
                 byteorder = utf16data[0];
@@ -495,11 +503,31 @@ int ShowFramelist(ID3V2 *id3v2)
                 else if(byteorder == UTF16BOM_LE)
                     printf("\e[0;36mLE  ");
                 else
-                    printf("\e[1;31mBOM missing ");
+                    printf("\e[1;31mBOM missing! ");
 
                 // now check if there are more BOMs (caused by this fucking tool I used before)
                 if(utf16data[1] == UTF16BOM_BE || utf16data[1] == UTF16BOM_LE)
                     printf("\e[1;33mMultiple BOM found! ");
+            }
+
+            // check if the used encoding is allows in the version of the standard claimed in the Tag Header
+            if(majorversion < 4)
+            {
+                if(encoding == ID3V2TEXTENCODING_UTF16_BE || encoding == ID3V2TEXTENCODING_UTF8)
+                    printf("\e[1;33mNot defined before ID3v2.4.0! \e[1;30m(Actual version: 2.%i.0)", majorversion);
+            }
+
+            // There should be no BOM within the UTF-16BE frames
+            if(encoding == ID3V2TEXTENCODING_UTF16_BE)
+            {
+                unsigned short *utf16data;
+                unsigned short firstword;
+                utf16data = (unsigned short*)&data[1];
+                firstword = utf16data[0];
+
+                // now check if there is an unexpected BOM
+                if(firstword == UTF16BOM_BE || firstword == UTF16BOM_LE)
+                    printf("\e[1;33mUnexpected BOM found! ");
             }
         }
         else if(frame->ID == 'APIC')
