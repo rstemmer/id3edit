@@ -51,14 +51,15 @@ typedef struct
 #define ID3V2FRAMEFLAG_COMPRESSED       (1<< 7)
 #define ID3V2FRAMEFLAG_ENCRYPTED        (1<< 6)
 #define ID3V2FRAMEFLAG_FRAMEGROUP       (1<< 5)
-typedef struct
+struct ID3V2_FRAME
 {
     unsigned int   ID;
     unsigned int   size;
     unsigned short flags;   // ID3V3FRAMEFLAG_*
     void*          data;    // Data of the frame
     struct ID3V2_FRAME *next;
-} ID3V2_FRAME;
+};
+typedef struct ID3V2_FRAME ID3V2_FRAME;
 
 typedef struct
 {
