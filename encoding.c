@@ -71,7 +71,7 @@ const char* ID3v2CodeID2String(unsigned char id3v2encoding)
 }
 
 
-int Decode(unsigned char id3v2encoding, void *rawdata,  size_t rawdatasize, char *utf8text, size_t textlengthlimit)
+int Decode(unsigned char id3v2encoding, void *rawdata,  size_t rawdatasize, char *utf8text, size_t textlengthlimit, size_t *actualsize)
 {
     // prepare transcoding
     const char *code;
@@ -93,12 +93,17 @@ int Decode(unsigned char id3v2encoding, void *rawdata,  size_t rawdatasize, char
             return ID3V2ERROR_BUFFEROVERFLOW;
 
         utf8text[actuallength] = '\0';
+        actuallength++;
     }
+
+    if(actualsize != NULL)
+        *actualsize = actuallength;
+
     return ID3V2ERROR_NOERROR;
 }
 
 
-int Encode(unsigned char id3v2encoding, char *utf8text, size_t textlength,  void *rawdata,  size_t rawdatasizelimit)
+int Encode(unsigned char id3v2encoding, char *utf8text, size_t textlength,  void *rawdata,  size_t rawdatasizelimit, size_t *actualsize)
 {
     // prepare transcoding
     const char *code;
@@ -112,6 +117,9 @@ int Encode(unsigned char id3v2encoding, char *utf8text, size_t textlength,  void
     error = Transcode("UTF-8", code, utf8text, textlength, rawdata, rawdatasizelimit, &actuallength);
     if(error)
         return error;
+
+    if(actualsize != NULL)
+        *actualsize = actuallength;
 
     return ID3V2ERROR_NOERROR;
 }

@@ -29,16 +29,16 @@ void PrintTestFailed()
 
 
 
-void CheckDecoderResult(char *text)
+void CheckDecoderResult(char *text, size_t actualsize)
 {
-    if(strncmp(text, "Täst 😈", 20) == 0)
+    if(strncmp(text, "Täst 😈", 20) == 0 && actualsize == strlen("Täst 😈") + 1)
         PrintTestSucceeded();
     else
         PrintTestFailed();
 }
-void CheckEncoderResult(void *result, const void *expected, size_t numbytes)
+void CheckEncoderResult(void *result, const void *expected, size_t expectedsize, size_t actualsize)
 {
-    if(memcmp(result, expected, numbytes) == 0)
+    if(memcmp(result, expected, expectedsize) == 0 && actualsize == expectedsize)
         PrintTestSucceeded();
     else
         PrintTestFailed();
@@ -61,26 +61,27 @@ int main(int argc, char *argv[])
 
     // Decode
     char text[1024];
+    size_t actualsize;
 
     PrintTest("Decode UTF-16BE with BOM");
-    error = Decode(ID3V2TEXTENCODING_UTF16_BOM, (void*)utf16bombe, 8*2, text, 1024);
-    CheckDecoderResult(text);
+    error = Decode(ID3V2TEXTENCODING_UTF16_BOM, (void*)utf16bombe, 8*2, text, 1024, &actualsize);
+    CheckDecoderResult(text, actualsize);
 
     PrintTest("Decode UTF-16LE with BOM");
-    error = Decode(ID3V2TEXTENCODING_UTF16_BOM, (void*)utf16bomle, 8*2, text, 1024);
-    CheckDecoderResult(text);
+    error = Decode(ID3V2TEXTENCODING_UTF16_BOM, (void*)utf16bomle, 8*2, text, 1024, &actualsize);
+    CheckDecoderResult(text, actualsize);
 
     PrintTest("Decode UTF-16BE without BOM");
-    error = Decode(ID3V2TEXTENCODING_UTF16_BE,  (void*)utf16be,    7*2, text, 1024);
-    CheckDecoderResult(text);
+    error = Decode(ID3V2TEXTENCODING_UTF16_BE,  (void*)utf16be,    7*2, text, 1024, &actualsize);
+    CheckDecoderResult(text, actualsize);
 
     PrintTest("Decode UTF-8");
-    error = Decode(ID3V2TEXTENCODING_UTF8,      (void*)utf8,       10,  text, 1024);
-    CheckDecoderResult(text);
+    error = Decode(ID3V2TEXTENCODING_UTF8,      (void*)utf8,       10,  text, 1024, &actualsize);
+    CheckDecoderResult(text, actualsize);
 
     PrintTest("Decode ISO 8859-1");
-    error = Decode(ID3V2TEXTENCODING_ISO8859_1, (void*)iso8859_1,  4,   text, 1024);
-    if(strncmp(text, "Täst", 5) == 0)
+    error = Decode(ID3V2TEXTENCODING_ISO8859_1, (void*)iso8859_1,  4,   text, 1024, &actualsize);
+    if(strncmp(text, "Täst", 6) == 0 && actualsize == 6)
         PrintTestSucceeded();
     else
         PrintTestFailed();
@@ -89,20 +90,20 @@ int main(int argc, char *argv[])
     char code[1024];
 
     PrintTest("Encode UTF-16LE with BOM");
-    error = Encode(ID3V2TEXTENCODING_UTF16_BOM, "Täst 😈", strlen("Täst 😈") + 1, code, 1024);
-    CheckEncoderResult(code, utf16bomle, 8*2);
+    error = Encode(ID3V2TEXTENCODING_UTF16_BOM, "Täst 😈", strlen("Täst 😈"), code, 1024, &actualsize);
+    CheckEncoderResult(code, utf16bomle, 8*2, actualsize);
 
     PrintTest("Encode UTF-16BE without BOM");
-    error = Encode(ID3V2TEXTENCODING_UTF16_BE, "Täst 😈", strlen("Täst 😈") + 1, code, 1024);
-    CheckEncoderResult(code, utf16be, 7*2);
+    error = Encode(ID3V2TEXTENCODING_UTF16_BE, "Täst 😈", strlen("Täst 😈"), code, 1024, &actualsize);
+    CheckEncoderResult(code, utf16be, 7*2, actualsize);
 
     PrintTest("Encode UTF-8");
-    error = Encode(ID3V2TEXTENCODING_UTF8, "Täst 😈", strlen("Täst 😈") + 1, code, 1024);
-    CheckEncoderResult(code, utf8, 10);
+    error = Encode(ID3V2TEXTENCODING_UTF8, "Täst 😈", strlen("Täst 😈"), code, 1024, &actualsize);
+    CheckEncoderResult(code, utf8, 10, actualsize);
 
     PrintTest("Encode ISO 8859-1");
-    error = Encode(ID3V2TEXTENCODING_ISO8859_1, "Täst", strlen("Täst") + 1, code, 1024);
-    CheckEncoderResult(code, iso8859_1, 4);
+    error = Encode(ID3V2TEXTENCODING_ISO8859_1, "Täst", strlen("Täst"), code, 1024, &actualsize);
+    CheckEncoderResult(code, iso8859_1, 4, actualsize);
     
 
     return EXIT_SUCCESS;

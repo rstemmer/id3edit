@@ -1,189 +1,110 @@
 #include <errno.h> 
 #include <stdio.h>
 #include <stdlib.h>
-#include <limits.h>
 #include <string.h>
-#include <unistd.h>
 #include <id3v2.h>
 #include <id3v2frame.h>
-#include <endian.h>
-#include <ConvertUTF/ConvertUTF.h>
-#include <utfx.h>
+#include <encoding.h>
 
 #ifdef DEBUG
 #include <printhex.h>
 #endif
 
-int ID3V2_GetTextFrame(ID3V2 *id3v2, const unsigned int ID, unsigned int *size, char **utf8text)
+int ID3V2_GetTextFrame(ID3V2 *id3v2, const unsigned int ID, char *utf8text, size_t bufferlimit)
 {
     int error;
 
     // Get raw data
-    unsigned int rawsize;
-    void        *rawdata;
-    error = ID3V2_GetFrame(id3v2, ID, &rawsize, &rawdata);
+    unsigned int   framesize;
+    unsigned char *framedata;
+    error = ID3V2_GetFrame(id3v2, ID, &framesize, (void**)&framedata);
     if(error)
         return error;
 
-    // Convert to utf8
-    unsigned int   utf8size;
-    unsigned char *utf8data;
-    if(*(char*)rawdata == ID3V2TEXTENCODING_ISO8859_1) // this is ISO-8859-1 (!!! NOT \0 TERMINATED !!!)
+    if(utf8text == NULL)
     {
-#ifdef DEBUG
-        printhex(rawdata, rawsize, 16, 0, "\e[1;36m", 1, "\e[1;34m", -1);
-        printf("\n");
-#endif
-        int isosize = rawsize - 1; // substract the encoding-byte
-
-        error = ISO_8859_1toUTF8(&utf8data, &utf8size, rawdata, isosize);
-        if(error)
-        {
-            free(rawdata);
-            return error;
-        }
+        free(framedata);
+        return ID3V2ERROR_NOERROR;
     }
-    else if(*(char*)rawdata == ID3V2TEXTENCODING_UTF16_BOM) // utf-16 with byte order mark as first char
-    {
-        // skip first byte because it contains the encoding info
-        // also divide the size by two because we need the number of utf-16 chars, not the bytes
-        unsigned short *utf16data = (unsigned short*)(((char*)rawdata)+1);
-        unsigned int    utf16size = (rawsize - 1)/2;
 
-        // Handle BOM
-        // Because of some stupid shitty tools there may be 2 BOMs and they may be wrong m(
-        // lets say, the last one counts, all leading are skipped
-        unsigned short byteorder;
-        while(*utf16data == UTF16BOM_BE || *utf16data == UTF16BOM_LE)
-        {
-            byteorder = *utf16data++;
-            utf16size--; // one character less…
-        }
+    // First byte defines the encoding
+    unsigned char encoding;
+    encoding = *framedata;
 
-#ifdef DEBUG
-        printhex(rawdata, rawsize, 16, 
-                0, "\e[1;36m", 
-                1, "\e[1;33m\e[1;42m", 
-                3, "\e[1;33m\e[1;41m", 
-                5, "\e[1;34m", -1);
-        printf("\n");
-#endif
-        // Convert
-        error = UTF16toUTF8(&utf8data, &utf8size, utf16data, utf16size, byteorder);
-        if(error)
-        {
-            free(rawdata);
-            return error;
-        }
-    }
-    else if(*(char*)rawdata == ID3V2TEXTENCODING_UTF16_BE)  // utf-16 big endian (and without leading BOM)
-    {
-        // skip first byte because it contains the encoding info
-        // also divide the size by two because we need the number of utf-16 chars, not the bytes
-        unsigned short *utf16data = (unsigned short*)(((char*)rawdata)+1);
-        unsigned int    utf16size = (rawsize - 1)/2;
+    // Rest is the encoded text that shall be converted to utf-8
+    error = Decode(encoding, framedata+1, framesize-1, utf8text, bufferlimit, NULL);
+    if(error)
+        return error;
 
-        // Handle BOM
-        // Because of some stupid shitty tools there may be a BOM that shall not be in this frame m(
-        // lets say, the last one counts, and they will not be ignored
-        unsigned short byteorder = UTF16BOM_BE; // here, default is big endian
-        while(*utf16data == UTF16BOM_BE || *utf16data == UTF16BOM_LE)
-        {
-            byteorder = *utf16data++;
-            utf16size--; // one character less…
-        }
-
-#ifdef DEBUG
-        printhex(rawdata, rawsize, 16, 
-                0, "\e[1;36m", 
-                1, "\e[1;33m\e[1;41m", 
-                3, "\e[1;34m", -1);
-        printf("\n");
-#endif
-        // Convert
-        error = UTF16toUTF8(&utf8data, &utf8size, utf16data, utf16size, byteorder);
-        if(error)
-        {
-            free(rawdata);
-            return error;
-        }
-    }
-    else if(*(char*)rawdata == ID3V2TEXTENCODING_UTF8)  // utf-8
-    {
-        utf8size = rawsize - 1 + 1; // -1: encoding, +1: \0
-        utf8data = malloc(utf8size);
-        if(utf8data == NULL)
-        {
-            free(rawdata);
-            return ID3V2ERROR_FATAL;
-        }
-        memcpy(utf8data, ((char*)rawdata)+1, utf8size); // just copy, no transcoding necessary
-        utf8data[utf8size-1] = '\0';
-    }
-    else // unsupported encoding
-    {
-        free(rawdata);
-        return ID3V2ERROR_UNSUPPORTEDENCODING;
-    }
-    
-    // free unneeded data
-    free(rawdata);
-
-    // Return everything
-    if(size != NULL)
-        *size = utf8size;
-    if(utf8text != NULL)
-        *utf8text = (char*)utf8data;
+    // free data
+    free(framedata);
 
     return ID3V2ERROR_NOERROR;
 }
 
 //////////////////////////////////////////////////////////////////////////////
 
-int ID3V2_SetTextFrame(ID3V2 *id3v2, const unsigned int ID, unsigned int size, char *utf8text)
+int ID3V2_SetTextFrame(ID3V2 *id3v2, const unsigned int ID, char *utf8text, unsigned char encoding)
 {
-    int error;
-    unsigned int    utf16length;    // number of character (not bytes)
-    unsigned short *utf16data;
+    if(utf8text == NULL)
+        return ID3V2ERROR_NOERROR;
 
-    // Convert utf8 to utf16
-    error = UTF8toUTF16(&utf16data, &utf16length, (unsigned char*)utf8text, size);
-    if(error)
-    {
-        return error;
-    }
-    
-    // Create frame data (add enc-id and BOM)
-    unsigned int rawsize = utf16length*2 + 3;   // char->byte + enc-ID + BOM
-    void        *rawdata = malloc(rawsize);
-    if(utf16data == NULL)
+    int error;
+    size_t textlength       = strlen(utf8text) + 1; // count '\0' as well
+    void  *rawtext;
+    size_t rawtextsize;
+    size_t textbufferlimit  = textlength * 4;       // 4 time the uft-8 encoded size is enough
+
+    rawtext = malloc(textlength * 4);
+    if(rawtext == NULL)
     {
         fprintf(stderr, "Fatal Error! - malloc returned NULL!\n");
-        free(utf16data);
         return ID3V2ERROR_FATAL;
     }
 
-    ((unsigned char*)rawdata)[0] = 0x01; // encoding is UTF-16
-    ((unsigned char*)rawdata)[1] = (UTF16BOM_LE >> 0) & 0xFF; // \_ BOM (Little Endian)
-    ((unsigned char*)rawdata)[2] = (UTF16BOM_LE >> 8) & 0xFF; // /
-    memcpy(((unsigned char*)rawdata)+3, utf16data, utf16length*2); // copy utf-16 string behind preamble
-
-#ifdef DEBUG
-    printhex(rawdata, rawsize, 16, 0, "\e[1;36m", 1, "\e[1;33m", 3, "\e[1;34m", -1);
-    printf("\n");
-#endif
-    // Set Frame
-    error = ID3V2_SetFrame(id3v2, ID, rawsize, rawdata);
+    // Encode text
+    //  -1 to not encode '\0' because the ID3 standard does not need it in text frames.
+    error = Encode(encoding, utf8text, textlength - 1,  rawtext, textbufferlimit, &rawtextsize);
     if(error)
     {
-        free(rawdata);
-        free(utf16data);
+        free(rawtext);
         return error;
     }
-    
+
+    // Create frame data
+    size_t         framesize = rawtextsize + 1;   // text bytes + enc-ID
+    unsigned char *framedata = malloc(framesize);
+    if(framedata == NULL)
+    {
+        fprintf(stderr, "Fatal Error! - malloc returned NULL!\n");
+        free(rawtext);
+        return ID3V2ERROR_FATAL;
+    }
+
+    framedata[0] = encoding;
+    memcpy(framedata + 1, rawtext, rawtextsize);
+
+    // Set Frame
+    error = ID3V2_SetFrame(id3v2, ID, framesize, framedata);
+    if(error)
+    {
+        free(rawtext);
+        free(framedata);
+        return error;
+    }
+
+    // Update ID3 version
+    if(encoding == ID3V2TEXTENCODING_UTF16_BE || encoding == ID3V2TEXTENCODING_UTF8)
+    {
+        if(id3v2->header.version_major == 3)
+        {
+            id3v2->header.version_major = 4;    // the used encoding is only allows in ID3v2.4.0
+        }
+    }
+
     // done
-    free(rawdata);
-    free(utf16data);
+    free(rawtext);
+    free(framedata);
 
     return ID3V2ERROR_NOERROR;
 }
@@ -191,178 +112,107 @@ int ID3V2_SetTextFrame(ID3V2 *id3v2, const unsigned int ID, unsigned int size, c
 //////////////////////////////////////////////////////////////////////////////
 
 int ID3V2_GetPictureFrame(ID3V2 *id3v2, const unsigned char pictype, 
-                          char **mimetype, char **description, void **picture, unsigned int *picsize)
+                          char **mimetype, char **description, void **picture, size_t *picsize)
 {
     int error;
 
     // Get raw data
-    unsigned int rawsize;
-    int          rawoffset = 0;  // traceing offset through the process to know where we are in the frame
-    void        *rawdata;
-    error = ID3V2_GetFrame(id3v2, 'APIC', &rawsize, &rawdata);
+    unsigned int   rawsize;
+    int            rawoffset = 0;  // tracing offset through the process to know where we are in the frame
+    unsigned char *rawdata;
+    error = ID3V2_GetFrame(id3v2, 'APIC', &rawsize, (void**)&rawdata);
     if(error)
         return error;
 
-    // Read header
-    unsigned char *rawbytes = (unsigned char*)rawdata;
-    
-    // encoding - 0x00: ISO 8859-1; 0x01: UTF-16
-    unsigned char encoding = *rawbytes;
-    rawoffset += 1;
+    // Encoding
+    unsigned char encoding = rawdata[rawoffset];
+    rawoffset++;
     
     // mime-type - ASCII encoded, '\0'-terminated
-    int  mimesize = strlen((char*)(rawbytes+rawoffset));
-    char *mime    = (char*)malloc(mimesize+1); // +'\0'
+    size_t mimesize = strlen((char*)&rawdata[rawoffset]);
+    char  *mime     = malloc(sizeof(char) * (mimesize + 1)); // +'\0'
     if(mime == NULL)
     {
         fprintf(stderr, "Fatal Error! - malloc returned NULL!\n");
         return ID3V2ERROR_FATAL;
     }
-    strncpy(mime, (char*)(rawbytes+rawoffset), mimesize+1); // at offset 1 all chars + '\0'
+    strncpy(mime, (char*)&rawdata[rawoffset], mimesize + 1); // from offset 1 all chars + '\0'
     rawoffset += mimesize + 1; // mimetype-string + '\0'
     
     // picture type
-    unsigned char picturetype = *(rawbytes + rawoffset);
+    unsigned char picturetype = rawdata[rawoffset];
     if(picturetype != pictype) // is this the one the user wants to have?
     {
         free(mime);
         fprintf(stderr, "Multiple APIC-frames are not supported yet!\n");
         return ID3V2ERROR_MISFITTINGSUBID;
     }
-    rawoffset += 1; // pictype
+    rawoffset++; // pictype
 
-    // text description SPEC SAYS: (raw data: max 64 chars + '\0[\0]' -> max 65*2 bytes = 130bytes)
-    const int     MAXDESCCHARS = 64+1;  // never forget the '\0'
-    unsigned char *desctext;            // utf-8 encoded \0-terminated string
-    int           descsize;             // number of bytes of the original description in the file (for offset calculation)
-    if(encoding == ID3V2TEXTENCODING_ISO8859_1) // ISO 8859-1
+    // text description. Spec say raw data: max 64 chars + '\0[\0]' -> max 65*2 bytes = 130bytes
+    char *desctext; // utf-8 encoded \0-terminated string
+    desctext = malloc(sizeof(char) * ID3V2_MAXPICTUREDESCRIPTIONSIZE * 4); // just allocate four times max length of raw data
+    if(desctext == NULL)
     {
-        // extract raw data
-        char *descdata;
-        descdata = malloc(sizeof(char) * MAXDESCCHARS); // just alloc max length
-        if(descdata == NULL)
-        {
-            fprintf(stderr, "Fatal Error! - malloc returned NULL!\n");
-            return ID3V2ERROR_FATAL;
-        }
-        strncpy(descdata, (char*)(rawbytes + rawoffset), MAXDESCCHARS);
-        descsize   = strlen(descdata) + 1; // number of bytes of the description for offset calculation 
-        rawoffset += descsize;
-
-        // convert to utf-8
-        error = ISO_8859_1toUTF8(&desctext, NULL, (unsigned char*)descdata, strlen(descdata));
-        if(error)
-        {
-            free(descdata);
-            return error;
-        }
-        free(descdata); // raw data not needed anymore
+        free(mime);
+        fprintf(stderr, "Fatal Error! - malloc returned NULL!\n");
+        return ID3V2ERROR_FATAL;
     }
-    else if(encoding == ID3V2TEXTENCODING_UTF16_BOM)// UTF-16
+    
+    // Get raw description size
+    size_t rawdescsize = 0;
+    while(true)
     {
-        // extract raw data
-        unsigned short *descdata;
-        descdata = malloc(sizeof(char)* 2*MAXDESCCHARS); // just alloc max length (1 Character = 2 Bytes)
-        if(descdata == NULL)
+        if(encoding == ID3V2TEXTENCODING_UTF16_BOM || encoding == ID3V2TEXTENCODING_UTF16_BE) // 2 byte encodings
         {
-            fprintf(stderr, "Fatal Error! - malloc returned NULL!\n");
-            return ID3V2ERROR_FATAL;
+            if(rawdata[rawoffset + rawdescsize] == 0x00 && rawdata[rawoffset + rawdescsize + 1] == 0x00)
+            {
+                rawdescsize += 2;
+                break;
+            }
+            rawdescsize += 2;
         }
-
-        // copy utf-16 data
-        unsigned short BOM     = *(unsigned short*)(rawbytes + rawoffset);
-        rawoffset             += 2; // BOM
-        unsigned short *source =  (unsigned short*)(rawbytes + rawoffset);
-        descsize               = 0;
-        for(int i=0; i<MAXDESCCHARS; i++) // max 64 chars + '\0\0'
+        else // 1 byte encodings
         {
-            descdata[i] = source[i];
-            descsize   += 2; // 2 bytes per char
-            if(descdata[i] == 0x0000) break;
+            if(rawdata[rawoffset + rawdescsize] == 0x00)
+            {
+                rawdescsize += 1;
+                break;
+            }
+            rawdescsize += 1;
         }
-        rawoffset += descsize;
-
-        // convert to utf-8
-        int utf16length = (descsize-2)/2; // number of chars, '\0\0' excluded
-        error = UTF16toUTF8(&desctext, NULL, descdata, utf16length, BOM);
-        if(error)
-        {
-            free(descdata);
-            return error;
-        }
-        free(descdata); // raw data not needed anymore
     }
-    else if(encoding == ID3V2TEXTENCODING_UTF16_BE)  // utf-16 big endian (and without leading BOM)
+
+    // Decode description
+    error = Decode(encoding, &rawdata[rawoffset], rawdescsize, desctext, ID3V2_MAXPICTUREDESCRIPTIONSIZE, NULL);
+    if(error)
     {
-        // extract raw data
-        unsigned short *descdata;
-        descdata = malloc(sizeof(char)* 2*MAXDESCCHARS); // just alloc max length (1 Character = 2 Bytes)
-        if(descdata == NULL)
-        {
-            fprintf(stderr, "Fatal Error! - malloc returned NULL!\n");
-            return ID3V2ERROR_FATAL;
-        }
-
-        // copy utf-16 DE data
-        unsigned short *source =  (unsigned short*)(rawbytes + rawoffset);
-        descsize               = 0;
-        for(int i=0; i<MAXDESCCHARS; i++) // max 64 chars + '\0\0'
-        {
-            descdata[i] = source[i];
-            descsize   += 2; // 2 bytes per char
-            if(descdata[i] == 0x0000) break;
-        }
-        rawoffset += descsize;
-
-        // convert to utf-8
-        int utf16length = (descsize-2)/2; // number of chars, '\0\0' excluded
-        error = UTF16toUTF8(&desctext, NULL, descdata, utf16length, UTF16BOM_BE);
-        if(error)
-        {
-            free(descdata);
-            return error;
-        }
-        free(descdata); // raw data not needed anymore
+        free(mime);
+        free(desctext);
+        return error;
     }
-    else if(encoding == ID3V2TEXTENCODING_UTF8)  // utf-8
-    {
-        desctext = malloc(sizeof(char)*MAXDESCCHARS); // just alloc max length
-        if(desctext == NULL)
-        {
-            fprintf(stderr, "Fatal Error! - malloc returned NULL!\n");
-            return ID3V2ERROR_FATAL;
-        }
-
-        // extract raw data
-        strncpy((char*)desctext, (char*)(rawbytes + rawoffset), MAXDESCCHARS);
-        descsize   = strlen((char*)desctext) + 1; // number of bytes of the description for offset calculation 
-        rawoffset += descsize;
-    }
-    else // unsupported encoding
-    {
-        fprintf(stderr, "Warning! - Unsupported text encoding (0x%2X) in artwork description.", encoding);
-    }
+    rawoffset += rawdescsize;
 
 #ifdef DEBUG
-    if(encoding == 0x01 || encoding == 0x02)
+    if(encoding == 0x01 || encoding == 0x02) // 2 byte encodings
+    {
+        printhex(rawdata, 128, 16, 
+            0,                            "\e[1;36m", // encoding
+            1,                            "\e[1;35m", // mime-type
+            1+mimesize+1,                 "\e[1;32m", // pictype
+            1+mimesize+1+1,               "\e[1;33m", // BOM
+            1+mimesize+1+1+2,             "\e[0;35m", // description
+            1+mimesize+1+1+2+rawdescsize, "\e[1;34m", // pic-data
+            -1);
+    }
+    else // 1 byte encodings
     {
         printhex(rawdata, 128, 16, 
             0,                          "\e[1;36m", // encoding
             1,                          "\e[1;35m", // mime-type
             1+mimesize+1,               "\e[1;32m", // pictype
-            1+mimesize+1+1,             "\e[1;33m", // BOM
-            1+mimesize+1+1+2,           "\e[0;35m", // description
-            1+mimesize+1+1+2+descsize,  "\e[1;34m", // pic-data
-            -1);
-    }
-    else // ISO8859-1
-    {
-        printhex(rawdata, 128, 16, 
-            0,                        "\e[1;36m", // encoding
-            1,                        "\e[1;35m", // mime-type
-            1+mimesize+1,             "\e[1;32m", // pictype
-            1+mimesize+1+1,           "\e[0;35m", // description
-            1+mimesize+1+1+descsize,  "\e[1;34m", // pic-data
+            1+mimesize+1+1,             "\e[0;35m", // description
+            1+mimesize+1+1+rawdescsize, "\e[1;34m", // pic-data
             -1);
     }
     printf("\n");
@@ -374,6 +224,8 @@ int ID3V2_GetPictureFrame(ID3V2 *id3v2, const unsigned char pictype,
     picdata = malloc(picdatasize);
     if(picdata == NULL)
     {
+        free(mime);
+        free(desctext);
         fprintf(stderr, "Fatal Error! - malloc returned NULL!\n");
         return ID3V2ERROR_FATAL;
     }
@@ -382,10 +234,19 @@ int ID3V2_GetPictureFrame(ID3V2 *id3v2, const unsigned char pictype,
 
     if(mimetype != NULL)
         *mimetype = mime;
+    else
+        free(mime);
+
     if(description != NULL)
-        *description = (char*)desctext;
+        *description = desctext;
+    else
+        free(desctext);
+
     if(picture != NULL)
         *picture = picdata;
+    else
+        free(picdata);
+
     if(picsize != NULL)
         *picsize = picdatasize;
 
@@ -396,87 +257,110 @@ int ID3V2_GetPictureFrame(ID3V2 *id3v2, const unsigned char pictype,
 //////////////////////////////////////////////////////////////////////////////
 
 int ID3V2_SetPictureFrame(ID3V2 *id3v2, const unsigned char pictype, 
-                          const char *mimetype, const char *description,
-                          void *picture, unsigned int picsize)
+                          const char *mimetype, const char *description, unsigned char encoding,
+                          void *picture, size_t picsize)
 {
     int error;
-    // collect all infos for the frame and convert description to utf16 data
-    unsigned int utf16length; // num of characters, no trailing zeros
-    unsigned short *utf16data;
+
+    // Encode description
+    char   rawdescdata[ID3V2_MAXPICTUREDESCRIPTIONSIZE];
+    size_t rawdescsize;
+
     if(description != NULL)
     {
-        error = UTF8toUTF16(&utf16data, &utf16length, (unsigned char*)description, strlen(description));
+        error = Encode(encoding, (char*)description, strlen(description)+1, 
+                       rawdescdata, ID3V2_MAXPICTUREDESCRIPTIONSIZE, &rawdescsize);
         if(error)
             return error;
     }
-    else // create empty utf16 string - 0-terminated
+    else // Create empty description if no one is given
     {
-        utf16length = 0;
-        utf16data   = (unsigned short*) malloc(2);
-        if(utf16data == NULL)
+        switch(encoding)
         {
-            fprintf(stderr, "Fatal Error! - malloc returned NULL!\n");
-            return ID3V2ERROR_FATAL;
+            case ID3V2TEXTENCODING_UTF16_BOM:
+                rawdescdata[0] = 0xFF;
+                rawdescdata[1] = 0xFE;
+                rawdescdata[2] = 0x00;
+                rawdescdata[3] = 0x00;
+                rawdescsize    = 4;
+                break;
+
+            case ID3V2TEXTENCODING_UTF16_BE:
+                rawdescdata[0] = 0x00;
+                rawdescdata[1] = 0x00;
+                rawdescsize    = 2;
+                break;
+
+            case ID3V2TEXTENCODING_UTF8:
+            case ID3V2TEXTENCODING_ISO8859_1:
+                rawdescdata[0] = 0x00;
+                rawdescsize    = 1;
+                break;
+
+            default:
+                return ID3V2ERROR_UNSUPPORTEDENCODING;
         }
-        *utf16data = 0x0000;
     }
 
-    // calculate framesize
-    unsigned int framesize = 0;
-    framesize += 1; // encoding
-    framesize += strlen(mimetype) + 1; // mimetype + '\0'
-    framesize += 1; // pictype
-    framesize += 2; // BOM
-    framesize += utf16length*2;     // description length in byte
-    framesize += 2; // '\0\0'
-    framesize += picsize;
+    // Build frame
+    unsigned int   framesize   = 0;
+    unsigned char *framedata   = NULL;
+    unsigned int   frameoffset = 0;
 
-    // create framdata
-    unsigned char *framedata = malloc(framesize);
+    // Calculate frame size
+    framesize += 1;                     // encoding
+    framesize += strlen(mimetype) + 1;  // mimetype + '\0'
+    framesize += 1;                     // picture type
+    framesize += rawdescsize;           // description
+    framesize += picsize;               // picture
+
+    // Create frame data
+    framedata = malloc(framesize);
     if(framedata == NULL)
     {
         fprintf(stderr, "Fatal Error! - malloc returned NULL!\n");
-        free(utf16data);
         return ID3V2ERROR_FATAL;
     }
 
-    unsigned int frameoffset = 0;
-    framedata[frameoffset++] = 0x01;                // encoding: UTF-16
-    strcpy((char*)(framedata+frameoffset), mimetype);        // mimetype
-    frameoffset += strlen(mimetype)+1;
-    framedata[frameoffset++] = pictype;             // pictype (should be 0x03 - front cover)
-    framedata[frameoffset++] = (UTF16BOM_LE >> 0) & 0xFF; // \_ BOM (little endian)
-    framedata[frameoffset++] = (UTF16BOM_LE >> 8) & 0xFF; // /
-    memcpy(framedata+frameoffset, utf16data, utf16length*2);    // utf16 encoded description
-    frameoffset += utf16length*2;
-    framedata[frameoffset++] = 0x00;                // first trailing \0 of the description
-    framedata[frameoffset++] = 0x00;                // secound trailing \0 of the description
-    memcpy(framedata+frameoffset, picture, picsize);// picture
+    framedata[frameoffset++] = encoding;                    // encoding: UTF-16
+    strcpy((char*)(framedata+frameoffset), mimetype);       // \_ mime type
+    frameoffset += strlen(mimetype)+1;                      // /
+    framedata[frameoffset++] = pictype;                     // picture type (should be 0x03 - front cover)
+    memcpy(framedata+frameoffset, rawdescdata, rawdescsize);// \_ encoded description
+    frameoffset += rawdescsize;                             // /
+    memcpy(framedata+frameoffset, picture, picsize);        // picture data
 
 #ifdef DEBUG
     unsigned int mimesize = strlen(mimetype);
     printhex(framedata, 128, 16, 
-            0,                          "\e[1;36m", // encoding
-            1,                          "\e[1;35m", // mime-type
-            1+mimesize+1,               "\e[1;32m", // pictype
-            1+mimesize+1+1,             "\e[1;33m", // BOM
-            1+mimesize+1+1+2,           "\e[0;35m", // description
-            1+mimesize+1+1+2+utf16length*2+2, "\e[1;34m", // pic-data
+            0,                            "\e[1;36m", // encoding
+            1,                            "\e[1;35m", // mime type
+            1+mimesize+1,                 "\e[1;32m", // picture type
+            1+mimesize+1+1,               "\e[1;33m", // Byte Order Mark (BOM) when UTF-16 encoded
+            1+mimesize+1+1+2,             "\e[0;35m", // description
+            1+mimesize+1+1+2+rawdescsize, "\e[1;34m", // picture data
             -1);
     printf("\n");
 #endif
-    // set frame
+    // Set frame
     error = ID3V2_SetFrame(id3v2, 'APIC', framesize, framedata);
     if(error)
     {
         free(framedata);
-        free(utf16data);
         return error;
+    }
+
+    // Update ID3 version
+    if(encoding == ID3V2TEXTENCODING_UTF16_BE || encoding == ID3V2TEXTENCODING_UTF8)
+    {
+        if(id3v2->header.version_major == 3)
+        {
+            id3v2->header.version_major = 4;    // the used encoding is only allows in ID3v2.4.0
+        }
     }
 
     // done
     free(framedata);
-    free(utf16data);
     return ID3V2ERROR_NOERROR;
 }
 // vim: tabstop=4 expandtab shiftwidth=4 softtabstop=4

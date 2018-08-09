@@ -6,14 +6,13 @@
 #include <unistd.h>
 #include <id3v2.h>
 #include <id3v2frame.h>
-#include <utfx.h>
+#include <encoding.h>
 #include <rawfile.h>
 #include <printhex.h>
 #include <stdbool.h>
 
-#define VERSION "1.12.0"
+#define VERSION "2.0.0 - indev"
 
-int FixFrame(ID3V2 *id3v2, const unsigned int ID);
 int CopyArgument(char **dst, char *src);
 int ProcessSetArgument(ID3V2 *id3v2, const unsigned int ID, char *argument);
 int ProcessGetArgument(ID3V2 *id3v2, const unsigned int ID, const char *name);
@@ -275,34 +274,6 @@ exit:
 
 //////////////////////////////////////////////////////////////////////////////
 
-int FixFrame(ID3V2 *id3v2, const unsigned int ID)
-{
-    unsigned int size;
-    char *data;
-    int error;
-
-    // READ
-    error = ID3V2_GetTextFrame(id3v2, ID, &size, &data);
-    if(error == ID3V2ERROR_FRAMENOTFOUND)
-        return 0;   // do not fix frames that doesn't exist
-    if(error)
-        return error;
-    printf("\e[1;34mFixing \"%s\"\e[0m\n", data);
-
-    // WRITE
-    error = ID3V2_SetTextFrame(id3v2, ID, size, data);
-    if(error)
-    {
-        SafeFree(data);
-        return error;
-    }
-
-    SafeFree(data);
-    return 0;
-}
-
-//////////////////////////////////////////////////////////////////////////////
-
 int ProcessSetArgument(ID3V2 *id3v2, const unsigned int ID, char *argument)
 {
     if(argument != NULL)
@@ -318,7 +289,7 @@ int ProcessSetArgument(ID3V2 *id3v2, const unsigned int ID, char *argument)
             case 'TPE1':
             case 'TPE2':
                 {
-                    error = ID3V2_SetTextFrame(id3v2, ID, strlen(argument), argument);
+                    error = ID3V2_SetTextFrame(id3v2, ID, argument, ID3V2TEXTENCODING_UTF16_BOM);
                     if(error)
                     {
                         fprintf(stderr, "ID3V2_SetTextFrame for ID 0x%08X failed with error %i!\n", ID, error);
@@ -339,7 +310,8 @@ int ProcessSetArgument(ID3V2 *id3v2, const unsigned int ID, char *argument)
                     }
 
                     error = ID3V2_SetPictureFrame(id3v2, 0x03 /*front cover*/, 
-                                                  "image/jpeg", NULL, picture, picsize);
+                                                  "image/jpeg", NULL, ID3V2TEXTENCODING_UTF16_BOM,
+                                                  picture, picsize);
                     SafeFree(picture);
                     if(error)
                     {
@@ -365,9 +337,16 @@ int ProcessSetArgument(ID3V2 *id3v2, const unsigned int ID, char *argument)
 
 int ProcessGetArgument(ID3V2 *id3v2, const unsigned int ID, const char *name)
 {
-    int error;
-    unsigned int size;
-    char *text = NULL;
+    int    error;
+    size_t bufferlimit = 1024;
+    char  *textbuffer;
+    textbuffer = malloc(bufferlimit);
+    if(textbuffer == NULL)
+    {
+        fprintf(stderr, "Critical Error: malloc returned NULL!\n");
+        return -1;
+    }
+
     switch(ID)
     {
         case 'TYER': // The 'Year' frame is a numeric string. It is always four characters long.
@@ -379,7 +358,7 @@ int ProcessGetArgument(ID3V2 *id3v2, const unsigned int ID, const char *name)
         case 'TPE2':
             {
                 printf("%s", name);
-                error = ID3V2_GetTextFrame(id3v2, ID, &size, &text);
+                error = ID3V2_GetTextFrame(id3v2, ID, textbuffer, bufferlimit);
                 if(error == ID3V2ERROR_FRAMENOTFOUND)
                 {
                     printf("\e[0;31mFrame does not Exist\e[0m\n");
@@ -387,12 +366,12 @@ int ProcessGetArgument(ID3V2 *id3v2, const unsigned int ID, const char *name)
                 else if(error)
                 {
                     fprintf(stderr, "ID3V2_SetTextFrame for ID 0x%08X failed with error %i!\n", ID, error);
+                    SafeFree(textbuffer);
                     return -1;
                 }
                 else
                 {
-                    printf("%s\e[0m\n", text);
-                    SafeFree(text);
+                    printf("%s\e[0m\n", textbuffer);
                 }
                 break;
             }
@@ -400,10 +379,12 @@ int ProcessGetArgument(ID3V2 *id3v2, const unsigned int ID, const char *name)
         default:
             {
                     fprintf(stderr, "ID not supported as argument! (0x%08X)\n", ID);
+                    SafeFree(textbuffer);
                     return -1;
             }
     }
 
+    SafeFree(textbuffer);
     return 0;
 }
 
@@ -411,10 +392,10 @@ int ProcessGetArgument(ID3V2 *id3v2, const unsigned int ID, const char *name)
 
 int StoreArtwork(ID3V2 *id3v2, char *storepath)
 {
-    char          *mimetype = NULL;
-    void          *picture  = NULL;
-    unsigned int   picsize  = 0;
-    int            error;
+    char   *mimetype = NULL;
+    void   *picture  = NULL;
+    size_t  picsize  = 0;
+    int     error;
     
     error = ID3V2_GetPictureFrame(id3v2, 0x03 /*Front Cover*/, &mimetype, NULL, &picture, &picsize);
     if(error)

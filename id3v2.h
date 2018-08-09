@@ -7,7 +7,7 @@
 #define ID3V2PADDING    2048    // number of padding bytes at the end - maybe some tools want to have some
 
 #define ID3V2ERROR_NOERROR           0  // no error - all is good
-#define ID3V2ERROR_FATAL        -1000   // if malloc returns NULL or other worst case errors (better to exit(-1))
+#define ID3V2ERROR_FATAL         -1000  // if malloc returns NULL or other worst case errors (better to exit(-1))
 #define ID3V2ERROR_PATHERROR        -1  // problem with the path (for example fopen failed)
 #define ID3V2ERROR_NOTSUPPORTED     -2
 #define ID3V2ERROR_FRAMENOTFOUND    -3
@@ -25,10 +25,10 @@
 
 #define ID3V2ID_TO_CHARS(i) (((i)>>24)&0xFF),(((i)>>16)&0xFF),(((i)>> 8)&0xFF),(((i)>> 0)&0xFF)
 
-// all structs are interpeted and decoded versions of the raw data
+// all structs are interpreted and decoded versions of the raw data
 typedef struct
 {
-    unsigned char ID[3];                     // 'ID3' - no 0-byte at the end!
+    unsigned char ID[3];            // 'ID3' - no 0-byte at the end!
     unsigned char version_major;    // 3 \_ for ID3v2.3.0
     unsigned char version_minor;    // 0 /
     unsigned char flags;            // ID3V2HEADERFLAG_*
@@ -69,7 +69,7 @@ typedef struct
     
     ID3V2_HEADER    header;    // Header of the ID3 information
     ID3V2_EXTHEADER extheader; // Extended Header
-    ID3V2_FRAME *framelist; // List of all ID3 Frames
+    ID3V2_FRAME    *framelist; // List of all ID3 Frames
 } ID3V2;
 
 //////////////////////////////////////////////////////////////////////////////
