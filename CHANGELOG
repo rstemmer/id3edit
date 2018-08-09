@@ -2,6 +2,7 @@
          +- Added --get-artwork to extract an artwork from a mp3 file
          +- Using iconv for handling different text encodings
          +- SetTextFrame now allows different encodings
+         +- Added --force240 to force the version number to ID3v2.4.0
 
 1.11.5 - Fixed a critical bug loosing 10 bytes when creating a ID3 Tag for a raw mp3 file
 1.11.4 - Changed mime-type for artwork (--set-artwork) from image/jpg to image/jpeg to make it standard conform

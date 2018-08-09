@@ -73,12 +73,16 @@ void PrintUsage()
     printf("\t\e[1;36m --create      \e[1;34m Create ID3v2 Tag iff it\'s a bare mp3 file \n");
     printf("\t\e[1;36m --clear       \e[1;34m Remove all ID3v2 before adding new \n");
     printf("\t\e[1;36m --showheader  \e[1;34m Prints details of the headers while reading \n");
-    printf("\t\e[1;36m --force230    \e[1;34m Force ID3 v 2.3.0 when writing \n");
+    printf("\t\e[1;36m --force230    \e[1;34m Force ID3 v 2.3.0 when writing \e[1;31m¹\n");
+    printf("\t\e[1;36m --force240    \e[1;34m Force ID3 v 2.4.0 when writing \n");
     printf("\n");
 
+    printf("\e[1;31m  ¹ \e[1;33mIt is up to you to make sure all frames are conform to that version of the standard!\e[0m\n");
+    printf("\e[1;30m    ID3v2.3.0 only allows UTF-16+BOM or ISO8859-1 encoded text\e[0m\n");
+    printf("\n");
     printf("\e[1;31m  * \e[1;33m\e[4mExperimental\e[0m\e[1;33m Software! - Do not do experiments with it!\e[0m\n");
     printf("\e[1;31m  * \e[1;33mArguments are \e[4mnot checked\e[0m\e[1;33m if they are valid (except pathes)!\e[0m\n");
-    printf("\e[1;31m  * \e[1;37mAll \"Text Information Frames\" set will be \e[4mUTF-16 encoded\e[0m\e[1;37m.\e[0m\n");
+    printf("\e[1;31m  * \e[1;37mDefault encoding for \"Text Information Frames\" is \e[4mUTF-16 with BOM\e[0m\e[1;37m.\e[0m\n");
 }
 
 int main(int argc, char *argv[])
@@ -126,6 +130,7 @@ int main(int argc, char *argv[])
     bool createtag  = false;
     bool cleartags  = false;
     bool force230   = false;
+    bool force240   = false;
     bool getframelist=false;
     bool getname    = false;
     bool getalbum   = false;
@@ -146,6 +151,7 @@ int main(int argc, char *argv[])
         GETFLAG(createtag,    "--create")
         GETFLAG(cleartags,    "--clear")
         GETFLAG(force230,     "--force230")
+        GETFLAG(force240,     "--force240")
         GETFLAG(OPT_PrintHeader, "--showheader")    // Global flag for the id3v2.c code
         GETFLAG(getframelist, "--get-framelist")
         GETFLAG(getall,       "--get-all")
@@ -246,8 +252,9 @@ int main(int argc, char *argv[])
         altpath = "/dev/null";  // if ID3V2_Closes sees /dev/null, nothing will be stored
     }
 
-    // Force ID3 version 2.3.0
-    if(force230) id3v2->header.version_major = 3;
+    // Force ID3 version
+    if(force230) id3v2->header.version_major = 3; // ID3v2.3.0
+    if(force240) id3v2->header.version_major = 4; // ID3v2.4.0
 
     error = ID3V2_Close(id3v2, altpath);
     if(error)
