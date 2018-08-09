@@ -58,7 +58,7 @@ int ID3V2_Open(ID3V2 **id3v2, const char *path, bool createtag)
     ID3V2 *id3 = (ID3V2*) malloc(sizeof(ID3V2));
     if(id3 == NULL)
     {
-        fprintf(stderr, "Fatal Error! - malloc returned 0!\n");
+        fprintf(stderr, "Fatal Error! - malloc returned NULL!\n");
         return ID3V2ERROR_FATAL;
     }
 
@@ -67,7 +67,7 @@ int ID3V2_Open(ID3V2 **id3v2, const char *path, bool createtag)
     id3->path = (char*) malloc(sizeof(char)*pathlength);
     if(id3->path == NULL)
     {
-        fprintf(stderr, "Fatal Error! - malloc returned 0!\n");
+        fprintf(stderr, "Fatal Error! - malloc returned NULL!\n");
         free(id3);
         return ID3V2ERROR_FATAL;
     }
@@ -90,12 +90,12 @@ int ID3V2_Open(ID3V2 **id3v2, const char *path, bool createtag)
     fread(&id3->header.version_minor,   1, 1, id3->file);
     fread(&id3->header.flags,           1, 1, id3->file);
 
-    // the headersize is stored as big endian. This must be converted to little endian.
+    // the header size is stored as big endian. This must be converted to little endian.
     // beside this, it has 7 bit per byte...
     unsigned int encsize; 
     fread(&encsize, 4, 1, id3->file);
     id3->header.origsize = ID3V2_DecodeSize(encsize);
-    id3->header.realsize = 0;   // initialize with zero. From now, every byte read this will be incremented
+    id3->header.realsize = 0;   // initialize with zero. From now, for every byte read this will be incremented
 
     // print the header if set in the options, or if debugging is enabled
 #ifndef DEBUG
@@ -112,7 +112,7 @@ int ID3V2_Open(ID3V2 **id3v2, const char *path, bool createtag)
     }
     //printf("\e[0m0x%08X -> %08X\n", bigendian, id3->header.size);
 
-    // check if I support this ID3 thing. If not, create one if allowad
+    // check if I support this ID3 thing. If not, create one if allowed
     if(id3->header.ID[0] != 'I' || id3->header.ID[1] != 'D' || id3->header.ID[2] != '3')
     {
         // in case this is a bare mp3 file, just create a new tag
@@ -150,6 +150,7 @@ int ID3V2_Open(ID3V2 **id3v2, const char *path, bool createtag)
         id3->rawmp3 = false; // there is a valid ID3 tag in the source file
     }
 
+    // Check flags
     if(id3->header.flags != 0)
     {
         fprintf(stderr, "Unsupported flags detected. Set flags are: 0x%02X\n", id3->header.flags);
@@ -157,13 +158,11 @@ int ID3V2_Open(ID3V2 **id3v2, const char *path, bool createtag)
         free(id3);
         return ID3V2ERROR_NOTSUPPORTED;
     }
-    if(id3->header.version_major == 4 && id3->header.version_minor == 0)
+
+    // Check version
+    if((id3->header.version_major != 3 && id3->header.version_major != 4) || id3->header.version_minor != 0)
     {
-        fprintf(stderr, "\e[1;33mWARNING:\e[0m ID3 Version 2.4.0 just partially supported and mostly untested!\n");
-    }
-    else if(id3->header.version_major != 3 || id3->header.version_minor != 0)
-    {
-        fprintf(stderr, "Version 2.%i.%i not supported yet! (just 2.3.0 allowed)\n",
+        fprintf(stderr, "Version 2.%i.%i not supported! (just 2.3.0 and 2.4.0 allowed)\n",
                 id3->header.version_major, 
                 id3->header.version_minor);
         free(id3->path);
@@ -202,8 +201,8 @@ int ID3V2_Open(ID3V2 **id3v2, const char *path, bool createtag)
     } 
 
     // read all frames
-    id3->framelist = NULL;
-    ID3V2_FRAME **next = &id3->framelist;
+    id3->framelist      = NULL;
+    ID3V2_FRAME  **next = &id3->framelist;
     unsigned int offset = 0;
     while(offset < id3->header.origsize)
     {
@@ -249,11 +248,7 @@ int ID3V2_Open(ID3V2 **id3v2, const char *path, bool createtag)
             printf("\e[1;34m, Size: \033[0;36m%6i\n",     frame->size);
         }
 
-        /*
-        // Put frame into list (this reverses the order of the tags in the file)
-        frame->next = id3->framelist;
-        id3->framelist = frame;
-        */
+        // Put frame into list
         *next = frame;
         next  = &frame->next;
 
@@ -275,7 +270,7 @@ int ID3V2_Open(ID3V2 **id3v2, const char *path, bool createtag)
     }
 
     // PEDANTIC HEADER CHECK
-    // check if the padding-bytes are realy padding bytes or if the headers size value is wrong (may happen with bad mp3 files)
+    // check if the padding-bytes are really padding bytes or if the headers size value is wrong (may happen with bad mp3 files)
     int data;
     while(offset < id3->header.origsize)
     {
@@ -290,8 +285,9 @@ int ID3V2_Open(ID3V2 **id3v2, const char *path, bool createtag)
                     offset, ftell(id3->file) - 1, id3->header.origsize);
             fprintf(stderr, "\tInvalid byte: 0x%X\n", ((unsigned)data)&0x00FF);
             fprintf(stderr, "\tI\'ll try to fix it.  If it doesn\'t work, nothing will become worse.\n");
-            //id3->header.origsize = id3->header.realsize;
-            id3->header.origsize = offset; // where the padding end
+
+            // Correct the original size to the position where the padding bytes end
+            id3->header.origsize = offset;
 
             // get a valid state in case the padding-check failed - +10 for the ID3 main header size
             fseek(id3->file, id3->header.origsize + 10, SEEK_SET);  
