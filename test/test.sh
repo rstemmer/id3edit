@@ -106,14 +106,18 @@ CreateTestMP3
 cp "$SRC" "$DST"
 CheckResult "22d57cc617b98a5a9ec0fd4c710d1bb3"
 
-PrintTest "Force  ID3v2.4.0"
+PrintTest "Force ID3v2.4.0"
 CreateTestMP3
 ./id3edit --create --force240 --outfile $DST $SRC
 CheckResult "ca1c6b39cd46f9d8077a2d91c5343fac"
 
-PrintTest "Force  ID3v2.3.0"
+PrintTest "Force ID3v2.3.0"
 ./id3edit --create --force230 --outfile $DST $SRC
 CheckResult "22d57cc617b98a5a9ec0fd4c710d1bb3"
+
+PrintTest "Remove ID3v2 Tag"
+./id3edit --strip $DST
+CheckResult "3064cf73aa8541e96201f8fab55293b2"
 
 
 

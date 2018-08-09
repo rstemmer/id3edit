@@ -92,13 +92,14 @@ int ID3V2_Open(ID3V2 **id3v2, const char *path, bool createtag);
  */
 
 
-int ID3V2_Close(ID3V2 *id3v2, const char *altpath);
+int ID3V2_Close(ID3V2 *id3v2, const char *altpath, bool removetag);
 /*
  * After storing (recreating) the ID3v2 infos the id3v2 struct will be freed - id3v2 is no more valid after
  * closing the file
  * If altpath is != NULL, the data will be written to a new file, otherwise the old file gets overwritten
  * The path must be absolute
  * If altpath is "/dev/null" nothing will be written (even not to /dev/null) - this is readonly-mode :)
+ * If removetag is true, then only the audio data will be stored. The tag itself gets rejected.
  *
  *  # error  = ID3V2_Close(id3v2, NULL);
  *  # *id3v2 = NULL;

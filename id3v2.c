@@ -320,9 +320,9 @@ int ID3V2_Open(ID3V2 **id3v2, const char *path, bool createtag)
 
 //////////////////////////////////////////////////////////////////////////////
 
-int ID3V2_Close(ID3V2 *id3v2, const char *altpath)
+int ID3V2_Close(ID3V2 *id3v2, const char *altpath, bool removetag)
 {
-    ID3V2 *id3 = id3v2; // two lettes less... well, internally I use id3 so this make the code more comfortable
+    ID3V2 *id3 = id3v2; // two letters less... well, internally I use id3 so this make the code more comfortable
     int error;
     bool readonly = false;
 
@@ -340,7 +340,7 @@ int ID3V2_Close(ID3V2 *id3v2, const char *altpath)
         }
     }
 
-    // open secound (destination) file. If altpath is given, this one is used, otherwise a temporary one
+    // open second (destination) file. If altpath is given, this one is used, otherwise a temporary one
     FILE *dstfile = NULL;
     if(altpath == NULL) // open tmp file
     {
@@ -368,7 +368,7 @@ int ID3V2_Close(ID3V2 *id3v2, const char *altpath)
 #endif
 
     // Store header
-    if(!readonly)
+    if(!readonly && !removetag)
     {
         fwrite(&id3->header.ID,            1, 3, dstfile); //\. 
         fwrite(&id3->header.version_major, 1, 1, dstfile); // \_ these values are always valid
@@ -390,7 +390,7 @@ int ID3V2_Close(ID3V2 *id3v2, const char *altpath)
     {
         unsigned int bigendian;
         // store frame
-        if(!readonly)
+        if(!readonly && !removetag)
         {
 #ifdef DEBUG
             printf("\e[1;33mWriting… ");
@@ -400,16 +400,16 @@ int ID3V2_Close(ID3V2 *id3v2, const char *altpath)
             bigendian = htobe16(frame->flags); fwrite(&bigendian, 2, 1, dstfile);
         
             fwrite(frame->data, 1, frame->size, dstfile);
-        }
 #ifdef DEBUG
-        printf("\e[1;37mStored frame: ");
-        printf("\e[1;34mID: \033[1;36m\'%c%c%c%c\'", (frame->ID >> 24) & 0xFF,
-                                                     (frame->ID >> 16) & 0xFF,
-                                                     (frame->ID >>  8) & 0xFF,
-                                                     (frame->ID >>  0) & 0xFF);
-        printf("\e[1;34m, Flags: \e[1;36m0x%04X",     frame->flags);
-        printf("\e[1;34m, Size: \e[1;36m%6i\e[0m\n",  frame->size);
+            printf("\e[1;37mStored frame: ");
+            printf("\e[1;34mID: \033[1;36m\'%c%c%c%c\'", (frame->ID >> 24) & 0xFF,
+                                                         (frame->ID >> 16) & 0xFF,
+                                                         (frame->ID >>  8) & 0xFF,
+                                                         (frame->ID >>  0) & 0xFF);
+            printf("\e[1;34m, Flags: \e[1;36m0x%04X",     frame->flags);
+            printf("\e[1;34m, Size: \e[1;36m%6i\e[0m\n",  frame->size);
 #endif
+        }
 
         // select next frame
         ID3V2_FRAME *oldframe;
@@ -422,11 +422,14 @@ int ID3V2_Close(ID3V2 *id3v2, const char *altpath)
     }
 
     // write padding bytes
-    if(!readonly)
+    if(!readonly && !removetag)
     {
         for(int i=0; i < ID3V2PADDING; i++)
             fputc(0x00, dstfile);
+    }
 
+    if(!readonly)
+    {
         // copy audio data to the new file
         // jump to the end of the ID3 infos in the orig file
         // the 10 is for the main header, old/orig size is used because the source has the orig structure

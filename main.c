@@ -68,10 +68,11 @@ void PrintUsage()
 
     // Flags
     printf("\e[1;34m Other options:\n\e[1;37m");
-    printf("\t\e[1;46m  Flag         \e[1;44m  Description         \e[0m\n");
+    printf("\t\e[1;46m  Flag         \e[1;44m  Description                       \e[0m\n");
     printf("\t\e[1;36m --readonly    \e[1;34m Do not Write to disk \n");
     printf("\t\e[1;36m --create      \e[1;34m Create ID3v2 Tag iff it\'s a bare mp3 file \n");
-    printf("\t\e[1;36m --clear       \e[1;34m Remove all ID3v2 before adding new \n");
+    printf("\t\e[1;36m --clear       \e[1;34m Remove all ID3v2 frames before adding new \n");
+    printf("\t\e[1;36m --strip       \e[1;34m Remove whole ID3 Tag \e[1;30m(leaves a bare audio file) \n");
     printf("\t\e[1;36m --showheader  \e[1;34m Prints details of the headers while reading \n");
     printf("\t\e[1;36m --force230    \e[1;34m Force ID3 v 2.3.0 when writing \e[1;31m¹\n");
     printf("\t\e[1;36m --force240    \e[1;34m Force ID3 v 2.4.0 when writing \n");
@@ -129,6 +130,7 @@ int main(int argc, char *argv[])
     bool readonly   = false;
     bool createtag  = false;
     bool cleartags  = false;
+    bool striptag   = false;
     bool force230   = false;
     bool force240   = false;
     bool getframelist=false;
@@ -150,6 +152,7 @@ int main(int argc, char *argv[])
         GETFLAG(readonly,     "--readonly")
         GETFLAG(createtag,    "--create")
         GETFLAG(cleartags,    "--clear")
+        GETFLAG(striptag,     "--strip")
         GETFLAG(force230,     "--force230")
         GETFLAG(force240,     "--force240")
         GETFLAG(OPT_PrintHeader, "--showheader")    // Global flag for the id3v2.c code
@@ -256,7 +259,7 @@ int main(int argc, char *argv[])
     if(force230) id3v2->header.version_major = 3; // ID3v2.3.0
     if(force240) id3v2->header.version_major = 4; // ID3v2.4.0
 
-    error = ID3V2_Close(id3v2, altpath);
+    error = ID3V2_Close(id3v2, altpath, striptag);
     if(error)
     {
         fprintf(stderr, "ID3V2_Close failed with error %i!\n", error);
