@@ -1,6 +1,7 @@
 #include <errno.h> 
 #include <stdio.h>
 #include <stdlib.h>
+#include <ctype.h>
 #include <limits.h>
 #include <string.h>
 #include <unistd.h>
@@ -14,11 +15,12 @@
 #define VERSION "2.0.0 - indev"
 
 int CopyArgument(char **dst, char *src);
-int ProcessSetArgument(ID3V2 *id3v2, const unsigned int ID, char *argument);
+int ProcessSetArgument(ID3V2 *id3v2, const unsigned int ID, char *argument, unsigned char encoding);
 int ProcessGetArgument(ID3V2 *id3v2, const unsigned int ID, const char *name);
 int StoreArtwork(ID3V2 *id3v2, char *storepath);
 int ShowFramelist(ID3V2 *id3v2);
 int DumpFrame(ID3V2 *id3v2, char *frameid);
+int GetEncoding(char *codename, unsigned char *encoding);
 void SafeFree(void* addr);
 int ValidatePath(char **path, int accessmode); // makes path absolute and checks access accessmode: W_OK|R_OK
 
@@ -64,6 +66,7 @@ void PrintUsage()
     printf("\t\e[1;46m  Option       \e[45m Arg. \e[44m  Description      \e[1;45m  Example  \e[0m\n");
     printf("\t\e[1;36m --outfile     \e[35m path \e[34m path to mp3       \e[0;35m ./new.mp3\n");
     printf("\t\e[1;36m --dump        \e[35m ID   \e[34m Hexdump of a tag  \e[0;35m TXXX     \n");
+    printf("\t\e[1;36m --encoding    \e[35m code \e[34m Frame encoding \e[1;31m¹  \e[0;35m utf-8    \n");
     printf("\n");
 
     // Flags
@@ -74,17 +77,40 @@ void PrintUsage()
     printf("\t\e[1;36m --clear       \e[1;34m Remove all ID3v2 frames before adding new \n");
     printf("\t\e[1;36m --strip       \e[1;34m Remove whole ID3 Tag \e[1;30m(leaves a bare audio file) \n");
     printf("\t\e[1;36m --showheader  \e[1;34m Prints details of the headers while reading \n");
-    printf("\t\e[1;36m --force230    \e[1;34m Force ID3 v 2.3.0 when writing \e[1;31m¹\n");
+    printf("\t\e[1;36m --force230    \e[1;34m Force ID3 v 2.3.0 when writing \e[1;31m²\n");
     printf("\t\e[1;36m --force240    \e[1;34m Force ID3 v 2.4.0 when writing \n");
     printf("\n");
 
-    printf("\e[1;31m  ¹ \e[1;33mIt is up to you to make sure all frames are conform to that version of the standard!\e[0m\n");
+    // Comments / footnotes
+    printf("\e[1;31m  ¹ \e[1;34mChange the default text encoding from \e[1;36mUTF-16 with BOM\e[1;34m to one of the following:\e[0m\n");
+    printf("\e[1;37m      \e[1;46m  Encoding  "
+                         "\e[1;44m  Comment                           "
+                         "\e[1;45m  Available since        \e[0m\n");
+    printf("\e[1;31m      \e[1;36m UTF-16     "
+                         "\e[1;34m UTF-16 with Byte Order Mark (BOM)  "
+                         "\e[1;35m ID3v2.3.0 \e[1;30m(default) \e[0m\n");
+    printf("\e[1;31m      \e[1;36m ISO8859-1  "
+                         "\e[1;34m Known as latin-1 or falsely ASCII  "
+                         "\e[1;35m ID3v2.3.0 \e[0m\n");
+    printf("\e[1;31m      \e[1;36m UTF-16BE   "
+                         "\e[1;34m UTF-16 Big Endian without BOM      "
+                         "\e[1;35m ID3v2.4.0 \e[0m\n");
+    printf("\e[1;31m      \e[1;36m UTF-8      "
+                         "\e[1;34m Most common Unicode encoding       "
+                         "\e[1;35m ID3v2.4.0 \e[1;30m(recommended)\e[0m\n");
+    printf("\n");
+
+    printf("\e[1;31m  ² \e[1;33mIt is up to you to make sure all frames are conform to that version of the standard!\e[0m\n");
     printf("\e[1;30m    ID3v2.3.0 only allows UTF-16+BOM or ISO8859-1 encoded text\e[0m\n");
     printf("\n");
+
+    // Some warnings
     printf("\e[1;31m  * \e[1;33m\e[4mExperimental\e[0m\e[1;33m Software! - Do not do experiments with it!\e[0m\n");
     printf("\e[1;31m  * \e[1;33mArguments are \e[4mnot checked\e[0m\e[1;33m if they are valid (except pathes)!\e[0m\n");
     printf("\e[1;31m  * \e[1;37mDefault encoding for \"Text Information Frames\" is \e[4mUTF-16 with BOM\e[0m\e[1;37m.\e[0m\n");
 }
+
+
 
 int main(int argc, char *argv[])
 {
@@ -124,6 +150,7 @@ int main(int argc, char *argv[])
     char *newtracknr= NULL;
     char *newcdnr   = NULL;
     char *dumpframe = NULL;
+    char *codename  = NULL; // Name of the encoding that shall be used for new frames
     char *mp3path   = NULL; // path to input file
     char *altpath   = NULL; // path to output file (if NULL, input = output)
     char *storeaw   = NULL; // path where the artwork from the mp3 file shall be stored
@@ -142,8 +169,8 @@ int main(int argc, char *argv[])
     bool getcdnr    = false;
     bool getall     = false;
 
-    // start with agrv[1], the first argument (argv[0] is the programm file)
-    // end one argument befor the end because the last one is the mp3-file
+    // start with argv[1], the first argument (argv[0] is the program file)
+    // end one argument before the end because the last one is the mp3-file
     int argi;
     for(argi=1; argi<argc-1; argi++)
     {
@@ -176,6 +203,7 @@ int main(int argc, char *argv[])
         GETARG(newtracknr, "--set-track")
         GETARG(newcdnr,    "--set-cd")
         GETARG(storeaw,    "--get-artwork")
+        GETARG(codename,   "--encoding")
         GETARG(altpath,    "--outfile")
         GETARG(dumpframe,  "--dump")
         
@@ -211,8 +239,11 @@ int main(int argc, char *argv[])
     }
 
     // Process program arguments
-    if(getframelist) if(ShowFramelist(id3v2)        != 0) goto exit;
-    if(dumpframe)    if(DumpFrame(id3v2, dumpframe) != 0) goto exit;
+    unsigned char encoding = ID3V2TEXTENCODING_UTF16_BOM; // default ID3v2.3.0 encoding
+
+    if(codename)     if(GetEncoding(codename, &encoding) != 0) goto exit;
+    if(getframelist) if(ShowFramelist(id3v2)             != 0) goto exit;
+    if(dumpframe)    if(DumpFrame(id3v2, dumpframe)      != 0) goto exit;
 
     // Get Tags
 #define PROCESSGETARGUMENT(a,i,n)  if(getall || (a)) if(ProcessGetArgument(id3v2, (i), (n)) != 0) goto exit;
@@ -239,20 +270,20 @@ int main(int argc, char *argv[])
     if(cleartags) ID3V2_RemoveAllFrames(id3v2);
 
     // Set Tags
-    if(ProcessSetArgument(id3v2, 'TIT2', newname)    != 0) goto exit;
-    if(ProcessSetArgument(id3v2, 'TALB', newalbum)   != 0) goto exit;
-    if(ProcessSetArgument(id3v2, 'TPE1', newartist)  != 0) goto exit;
-    if(ProcessSetArgument(id3v2, 'TPE2', newartist)  != 0) goto exit;
-    if(ProcessSetArgument(id3v2, 'TYER', newrelease) != 0) goto exit;
-    if(ProcessSetArgument(id3v2, 'TRCK', newtracknr) != 0) goto exit;
-    if(ProcessSetArgument(id3v2, 'TPOS', newcdnr)    != 0) goto exit;
-    if(ProcessSetArgument(id3v2, 'APIC', newartwork) != 0) goto exit;
+    if(ProcessSetArgument(id3v2, 'TIT2', newname,    encoding) != 0) goto exit;
+    if(ProcessSetArgument(id3v2, 'TALB', newalbum,   encoding) != 0) goto exit;
+    if(ProcessSetArgument(id3v2, 'TPE1', newartist,  encoding) != 0) goto exit;
+    if(ProcessSetArgument(id3v2, 'TPE2', newartist,  encoding) != 0) goto exit;
+    if(ProcessSetArgument(id3v2, 'TYER', newrelease, encoding) != 0) goto exit;
+    if(ProcessSetArgument(id3v2, 'TRCK', newtracknr, encoding) != 0) goto exit;
+    if(ProcessSetArgument(id3v2, 'TPOS', newcdnr,    encoding) != 0) goto exit;
+    if(ProcessSetArgument(id3v2, 'APIC', newartwork, encoding) != 0) goto exit;
 
     // CLOSE
     if(readonly)
     {
         SafeFree(altpath);
-        altpath = "/dev/null";  // if ID3V2_Closes sees /dev/null, nothing will be stored
+        altpath = "/dev/null";  // if ID3V2_Close sees /dev/null, nothing will be stored
     }
 
     // Force ID3 version
@@ -265,9 +296,9 @@ int main(int argc, char *argv[])
         fprintf(stderr, "ID3V2_Close failed with error %i!\n", error);
         goto exit;
     }
-    // now the exit is wanted and not because of an occured error
+
+    // now the exit is wanted and not because of an occurred error
     exitcode = EXIT_SUCCESS;
-    
 exit:
 
     SafeFree(newname);
@@ -279,65 +310,67 @@ exit:
     SafeFree(newcdnr);
     SafeFree(mp3path);
     SafeFree(storeaw);
+    SafeFree(codename);
     return exitcode;
 }
 
 //////////////////////////////////////////////////////////////////////////////
 
-int ProcessSetArgument(ID3V2 *id3v2, const unsigned int ID, char *argument)
+// Does not change anything when argument == NULL
+int ProcessSetArgument(ID3V2 *id3v2, const unsigned int ID, char *argument, unsigned char encoding)
 {
-    if(argument != NULL)
+    if(argument == NULL)
+        return 0;
+
+    int error;
+    switch(ID)
     {
-        int error;
-        switch(ID)
-        {
-            case 'TYER': // The 'Year' frame is a numeric string. It is always four characters long.
-            case 'TRCK': // E.g. "4/9"
-            case 'TPOS': // E.g. "1/2"
-            case 'TIT2':
-            case 'TALB':
-            case 'TPE1':
-            case 'TPE2':
+        case 'TYER': // The 'Year' frame is a numeric string. It is always four characters long.
+        case 'TRCK': // E.g. "4/9"
+        case 'TPOS': // E.g. "1/2"
+        case 'TIT2':
+        case 'TALB':
+        case 'TPE1':
+        case 'TPE2':
+            {
+                error = ID3V2_SetTextFrame(id3v2, ID, argument, encoding);
+                if(error)
                 {
-                    error = ID3V2_SetTextFrame(id3v2, ID, argument, ID3V2TEXTENCODING_UTF16_BOM);
-                    if(error)
-                    {
-                        fprintf(stderr, "ID3V2_SetTextFrame for ID 0x%08X failed with error %i!\n", ID, error);
-                        return -1;
-                    }
-                    break;
+                    fprintf(stderr, "ID3V2_SetTextFrame for ID 0x%08X failed with error %i!\n", ID, error);
+                    return -1;
+                }
+                break;
+            }
+
+        case 'APIC':
+            {
+                void *picture = NULL;
+                unsigned int picsize;
+                error = RAWFILE_Read(argument, &picture, &picsize);
+                if(error)
+                {
+                    fprintf(stderr, "RAWFILE_Read failed for \"%s\" with error %i!\n", argument, error);
+                    return -1;
                 }
 
-            case 'APIC':
+                error = ID3V2_SetPictureFrame(id3v2, 0x03 /*front cover*/, 
+                                              "image/jpeg", NULL, encoding,
+                                              picture, picsize);
+                SafeFree(picture);
+                if(error)
                 {
-                    void *picture = NULL;
-                    unsigned int picsize;
-                    error = RAWFILE_Read(argument, &picture, &picsize);
-                    if(error)
-                    {
-                        fprintf(stderr, "RAWFILE_Read failed for \"%s\" with error %i!\n", argument, error);
-                        return -1;
-                    }
-
-                    error = ID3V2_SetPictureFrame(id3v2, 0x03 /*front cover*/, 
-                                                  "image/jpeg", NULL, ID3V2TEXTENCODING_UTF16_BOM,
-                                                  picture, picsize);
-                    SafeFree(picture);
-                    if(error)
-                    {
-                        fprintf(stderr, "ID3V2_SetPictureFrame failed with error %i!\n", error);
-                        return -1;
-                    }
-
-                    break;
+                    fprintf(stderr, "ID3V2_SetPictureFrame failed with error %i!\n", error);
+                    return -1;
                 }
 
-            default:
-                {
-                        fprintf(stderr, "ID not supported as argument! (0x%08X)\n", ID);
-                        return -1;
-                }
-        }
+                break;
+            }
+
+        default:
+            {
+                    fprintf(stderr, "ID not supported as argument! (0x%08X)\n", ID);
+                    return -1;
+            }
     }
 
     return 0;
@@ -584,6 +617,71 @@ int DumpFrame(ID3V2 *id3v2, char *frameid)
         frame = (ID3V2_FRAME*)frame->next;
     }
 
+    return 0;
+}
+
+//////////////////////////////////////////////////////////////////////////////
+
+// If encoding == NULL; only check if the name is valid
+int GetEncoding(char *codename, unsigned char *encoding)
+{
+    // Make string uniform
+    size_t size;
+    char  *name;
+    size = strlen(codename) + 1;
+    name = malloc(sizeof(char) * size);
+    if(name == NULL)
+    {
+        fprintf(stderr, "Critical Error: malloc returned NULL!\n");
+        return -1;
+    }
+
+    for(unsigned int i=0; i<size; i++)
+    {
+        name[i] = tolower(codename[i]);
+        if(name[i] == '_') name[i] = '-';
+        if(name[i] == ' ') name[i] = '-';
+    }
+
+    // Translate encoding name
+    unsigned char code;
+
+         if(strncmp(name, "iso8859-1",  size) == 0
+          ||strncmp(name, "iso-8859-1", size) == 0
+          ||strncmp(name, "latin-1",    size) == 0
+          ||strncmp(name, "latin1",     size) == 0
+          ||strncmp(name, "ascii",      size) == 0
+          ) code = ID3V2TEXTENCODING_ISO8859_1;
+
+    else if(strncmp(name, "utf16",    size) == 0
+          ||strncmp(name, "utf-16",   size) == 0
+          ||strncmp(name, "utf16bom", size) == 0
+          ||strncmp(name, "utf16+bom", size) == 0
+          ||strncmp(name, "utf-16+bom", size) == 0
+          ) code = ID3V2TEXTENCODING_UTF16_BOM;
+
+    else if(strncmp(name, "utf16be",   size) == 0
+          ||strncmp(name, "utf-16be",  size) == 0
+          ||strncmp(name, "utf16-be",  size) == 0
+          ||strncmp(name, "utf-16-be", size) == 0
+          ) code = ID3V2TEXTENCODING_UTF16_BE;
+
+    else if(strncmp(name, "utf8",  size) == 0
+          ||strncmp(name, "utf-8", size) == 0
+          ) code = ID3V2TEXTENCODING_UTF8;
+
+    else
+    {
+        fprintf(stderr, "Encoding (%s) not supported! Check help for valid encodings\n", codename);
+        free(name);
+        return -1;
+    }
+
+    // Return
+    if(encoding != NULL)
+        *encoding = code;
+
+    free(name);
     return 0;
 }
 

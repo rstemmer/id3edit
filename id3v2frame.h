@@ -6,12 +6,6 @@
 #define ID3V2TEXTENCODING_UTF16_BE  0x02    /* utf-16 big endian (ID3v2.4.0) */
 #define ID3V2TEXTENCODING_UTF8      0x03    /* utf-8             (ID3v2.4.0) */
 
-#define ID3V2_GetTitle(i,t,l)  ID3V2_GetTextFrame(i, 'TIT2', t, l)
-#define ID3V2_GetAlbum(i,t,l)  ID3V2_GetTextFrame(i, 'TALB', t, l)
-#define ID3V2_GetArtist(i,t,l) ID3V2_GetTextFrame(i, 'TPE1', t, l)
-#define ID3V2_GetYear(i,t,l)   ID3V2_GetTextFrame(i, 'TYER', t, l)
-#define ID3V2_GetTrack(i,t,l)  ID3V2_GetTextFrame(i, 'TRCK', t, l)
-#define ID3V2_GetCD(i,t,l)     ID3V2_GetTextFrame(i, 'TPOS', t, l)
 
 /*
  * ID: 4 Byte Frame ID
@@ -22,15 +16,6 @@
  * bufferlimit: is the size of the utf8text buffer in bytes
  */
 int ID3V2_GetTextFrame(ID3V2 *id3v2, const unsigned int ID, char *utf8text, size_t bufferlimit);
-
-
-
-#define ID3V2_SetTitle(i,t)  ID3V2_SetTextFrame(i, 'TIT2', t, ID3V2TEXTENCODING_UTF16_BOM)
-#define ID3V2_SetAlbum(i,t)  ID3V2_SetTextFrame(i, 'TALB', t, ID3V2TEXTENCODING_UTF16_BOM)
-#define ID3V2_SetArtist(i,t) ID3V2_SetTextFrame(i, 'TPE1', t, ID3V2TEXTENCODING_UTF16_BOM)
-#define ID3V2_SetYear(i,t)   ID3V2_SetTextFrame(i, 'TYER', t, ID3V2TEXTENCODING_UTF16_BOM)
-#define ID3V2_SetTrack(i,t)  ID3V2_SetTextFrame(i, 'TRCK', t, ID3V2TEXTENCODING_UTF16_BOM)
-#define ID3V2_SetCD(i,t)     ID3V2_SetTextFrame(i, 'TPOS', t, ID3V2TEXTENCODING_UTF16_BOM)
 
 /*
  * ID: 4 Byte Frame ID

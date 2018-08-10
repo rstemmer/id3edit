@@ -145,6 +145,22 @@ PrintTest "Try replacing Text Frame with read-only flag"
 ./id3edit --readonly --set-name "This is a test 😈" $DST
 CheckResult "bff0a4da32a384cd333fcb9f02c051bd"
 
+PrintTest "Set UTF-16+BOM encoded Text Frame"
+./id3edit --create --set-name "This is a test 😈" --outfile $DST $SRC
+./id3edit --encoding UTF-16 --set-name "This is a test 😈" $DST
+CheckResult "b094b92ff7873618aebcc819d8b36355"
+
+PrintTest "Set UTF-16BE encoded Text Frame"
+./id3edit --encoding UTF-16BE --set-name "This is a test 😈" $DST
+CheckResult "24985f60193e2c8e9395d39dd4df48e3"
+
+PrintTest "Set UTF-8 encoded Text Frame"
+./id3edit --encoding UTF-8 --set-name "This is a test 😈" $DST
+CheckResult "bbc09094226d8b7229af13d3d5ff1933"
+
+PrintTest "Set ISO 8859-1 encoded Text Frame"
+./id3edit --encoding ISO8859-1 --set-name "This is ä test" $DST
+CheckResult "bc742aadbef2587ced763374a838d3c5"
 
 
 
