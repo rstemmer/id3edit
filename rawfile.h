@@ -5,8 +5,8 @@
 #define RAWFILEERROR_FATAL      -100
 #define RAWFILEERROR_PATHERROR  -101
 
-int RAWFILE_Read(const char *path,  void **rawdata, unsigned int *size);
-int RAWFILE_Write(const char *path, void  *rawdata, unsigned int  size);
+int RAWFILE_Read( const char *path,       void **rawdata, size_t *size);
+int RAWFILE_Write(const char *path, const void  *rawdata, size_t  size);
 
 #endif
 

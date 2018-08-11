@@ -63,7 +63,7 @@ int ID3V2_Open(ID3V2 **id3v2, const char *path, bool createtag)
     }
 
     // Copy path
-    int pathlength = strlen(path) + 1;  // don't forget the terminating \0
+    size_t pathlength = strlen(path) + 1;  // don't forget the terminating \0
     id3->path = (char*) malloc(sizeof(char)*pathlength);
     if(id3->path == NULL)
     {
@@ -85,10 +85,10 @@ int ID3V2_Open(ID3V2 **id3v2, const char *path, bool createtag)
     }
 
     // Read Header
-    fread(&id3->header.ID,              1, 3, id3->file);
-    fread(&id3->header.version_major,   1, 1, id3->file);
-    fread(&id3->header.version_minor,   1, 1, id3->file);
-    fread(&id3->header.flags,           1, 1, id3->file);
+    fread(&id3->header.ID,            1, 3, id3->file);
+    fread(&id3->header.version_major, 1, 1, id3->file);
+    fread(&id3->header.version_minor, 1, 1, id3->file);
+    fread(&id3->header.flags,         1, 1, id3->file);
 
     // the header size is stored as big endian. This must be converted to little endian.
     // beside this, it has 7 bit per byte...
@@ -110,7 +110,6 @@ int ID3V2_Open(ID3V2 **id3v2, const char *path, bool createtag)
         if(createtag)
             printf("\e[1;30m\tCreating new Tag if 0x%02X == 0xFF && 0x%02X ∈ {0xFD,0xFB,0xFA,0xF3}\n", id3->header.ID[0], id3->header.ID[1]);
     }
-    //printf("\e[0m0x%08X -> %08X\n", bigendian, id3->header.size);
 
     // check if I support this ID3 thing. If not, create one if allowed
     if(id3->header.ID[0] != 'I' || id3->header.ID[1] != 'D' || id3->header.ID[2] != '3')
@@ -281,7 +280,7 @@ int ID3V2_Open(ID3V2 **id3v2, const char *path, bool createtag)
         // Check if valid, if not, try to rescue the file by assuming that the headers size value is invalid
         if((char)data != 0x00)
         {
-            fprintf(stderr, "\e[1;31mBad padding byte found at offset %i (file pos. %li) - expected at offset %i.\n", 
+            fprintf(stderr, "Bad padding byte found at offset %i (file pos. %li) - expected at offset %i.\n", 
                     offset, ftell(id3->file) - 1, id3->header.origsize);
             fprintf(stderr, "\tInvalid byte: 0x%X\n", ((unsigned)data)&0x00FF);
             fprintf(stderr, "\tI\'ll try to fix it.  If it doesn\'t work, nothing will become worse.\n");
@@ -304,7 +303,7 @@ int ID3V2_Open(ID3V2 **id3v2, const char *path, bool createtag)
     && magicword != 0xFDFF
     && magicword != 0xF3FF) // keep LE in mind
     {
-        fprintf(stderr, "\e[1;31mMagic mp3-ID not found at expected offset %i (file pos. %li)!\n", 
+        fprintf(stderr, "Magic mp3-ID not found at expected offset %i (file pos. %li)!\n", 
                 offset, ftell(id3->file) - 1);
         fprintf(stderr, "\tInvalid ID: 0x%4X\n", magicword&0x0FFFF);
         fprintf(stderr, "\tAt file pos. %li\n", ftell(id3->file));
@@ -501,7 +500,7 @@ int ID3V2_Close(ID3V2 *id3v2, const char *altpath, bool removetag)
 
 //////////////////////////////////////////////////////////////////////////////
 
-static ID3V2_FRAME *GetFrameById(ID3V2 *id3v2, const unsigned int ID)
+static ID3V2_FRAME *GetFrameById(const ID3V2 *id3v2, unsigned int ID)
 {
     ID3V2_FRAME *frame;
     frame = id3v2->framelist;
@@ -597,7 +596,7 @@ int ID3V2_RemoveAllFrames(ID3V2 *id3v2)
 
 //////////////////////////////////////////////////////////////////////////////
 
-int ID3V2_GetFrame(ID3V2 *id3v2, const unsigned int ID, unsigned int *size, void **data)
+int ID3V2_GetFrame(const ID3V2 *id3v2, unsigned int ID, size_t *size, void **data)
 {
 #ifdef DEBUG
         printf("\e[1;37mGet frame: ");
@@ -630,7 +629,7 @@ int ID3V2_GetFrame(ID3V2 *id3v2, const unsigned int ID, unsigned int *size, void
 
 //////////////////////////////////////////////////////////////////////////////
 
-int ID3V2_SetFrame(ID3V2 *id3v2, const unsigned int ID, unsigned int size, void *data)
+int ID3V2_SetFrame(ID3V2 *id3v2, unsigned int ID, size_t size, const void *data)
 {
 #ifdef DEBUG
         printf("\e[1;37mSet frame: ");

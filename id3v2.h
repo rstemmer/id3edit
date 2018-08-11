@@ -110,7 +110,7 @@ int ID3V2_RemoveAllFrames(ID3V2 *id3v2);
  * Remove all frames
  */
 
-int ID3V2_GetFrame(ID3V2 *id3v2, const unsigned int ID, unsigned int *size, void **data);
+int ID3V2_GetFrame(const ID3V2 *id3v2, unsigned int ID, size_t *size, void **data);
 /*
  * the size of the frame gets returned by writing to the size pointer
  * for data, new memory gets allocated and a copy of the data will be created.
@@ -127,7 +127,7 @@ int ID3V2_GetFrame(ID3V2 *id3v2, const unsigned int ID, unsigned int *size, void
  * # *title = NULL;
  */
 
-int ID3V2_SetFrame(ID3V2 *id3v2, const unsigned int ID, unsigned int size, void *data);
+int ID3V2_SetFrame(ID3V2 *id3v2, unsigned int ID, size_t size, const void *data);
 /*
  * # error = ID3V2_SetFrame(id3v2, 'TIT2', size, title);
  */

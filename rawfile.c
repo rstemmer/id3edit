@@ -10,7 +10,7 @@
 #include <printhex.h>
 #endif
 
-int RAWFILE_Read(const char *path,  void **rawdata, unsigned int *size)
+int RAWFILE_Read(const char *path, void **rawdata, size_t *size)
 {
     FILE *file;
     // open file
@@ -22,10 +22,15 @@ int RAWFILE_Read(const char *path,  void **rawdata, unsigned int *size)
     }
 
     // get size
-    unsigned int filesize;
+    long filesize;
     fseek(file, 0, SEEK_END); // go to the end of file
     filesize  =  ftell(file); // get position in file
     fseek(file, 0, SEEK_SET); // go to the begin of file
+    if(filesize < 0)
+    {
+        fprintf(stderr, "Determine size of file \"%s\" failed with error \"%s\"\n", path, strerror(errno));
+        return RAWFILEERROR_FATAL;
+    }
 
     // allocate memory
     unsigned char *data;
@@ -47,14 +52,14 @@ int RAWFILE_Read(const char *path,  void **rawdata, unsigned int *size)
     if(rawdata)
         *rawdata = data;
     if(size)
-        *size = filesize;
+        *size = (size_t)filesize;
 
     return RAWFILEERROR_NOERROR;
 }
 
 //////////////////////////////////////////////////////////////////////////////
 
-int RAWFILE_Write(const char *path, void  *rawdata, unsigned int size)
+int RAWFILE_Write(const char *path, const void *rawdata, size_t size)
 {
     FILE *file;
     // open file
@@ -70,6 +75,7 @@ int RAWFILE_Write(const char *path, void  *rawdata, unsigned int size)
 
     // close file
     fclose(file);
+    file = NULL;
 
     return RAWFILEERROR_NOERROR;
 }

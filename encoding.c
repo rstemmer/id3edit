@@ -1,9 +1,6 @@
 #include <errno.h> 
 #include <stdio.h>
 #include <stdlib.h>
-//#include <string.h>
-//#include <unistd.h>
-//#include <endian.h>
 #include <id3v2.h>
 #include <id3v2frame.h>
 #include <iconv.h>
@@ -13,7 +10,7 @@
 #include <printhex.h>
 #endif
 
-int Transcode(const char *from, const char *to, void *input, size_t inputbytelimit, void *output, size_t outputbytelimit, size_t *actualsize)
+int Transcode(const char *from, const char *to, const void *input, size_t inputbytelimit, void *output, size_t outputbytelimit, size_t *actualsize)
 {
     iconv_t cd;
     size_t  retval;
@@ -103,7 +100,7 @@ int Decode(unsigned char id3v2encoding, void *rawdata,  size_t rawdatasize, char
 }
 
 
-int Encode(unsigned char id3v2encoding, char *utf8text, size_t textlength,  void *rawdata,  size_t rawdatasizelimit, size_t *actualsize)
+int Encode(unsigned char id3v2encoding, const char *utf8text, size_t textlength,  void *rawdata,  size_t rawdatasizelimit, size_t *actualsize)
 {
     // prepare transcoding
     const char *code;

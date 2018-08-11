@@ -15,12 +15,12 @@
 #define VERSION "2.0.0 - indev"
 
 int CopyArgument(char **dst, char *src);
-int ProcessSetArgument(ID3V2 *id3v2, const unsigned int ID, char *argument, unsigned char encoding);
-int ProcessGetArgument(ID3V2 *id3v2, const unsigned int ID, const char *name);
-int StoreArtwork(ID3V2 *id3v2, char *storepath);
-int ShowFramelist(ID3V2 *id3v2);
-int DumpFrame(ID3V2 *id3v2, char *frameid);
-int GetEncoding(char *codename, unsigned char *encoding);
+int ProcessSetArgument(ID3V2 *id3v2, unsigned int ID, const char *argument, unsigned char encoding);
+int ProcessGetArgument(const ID3V2 *id3v2, const unsigned int ID, const char *name);
+int StoreArtwork(ID3V2 *id3v2, const char *storepath);
+int ShowFramelist(const ID3V2 *id3v2);
+int DumpFrame(const ID3V2 *id3v2, const char *frameid);
+int GetEncoding(const char *codename, unsigned char *encoding);
 void SafeFree(void* addr);
 int ValidatePath(char **path, int accessmode); // makes path absolute and checks access accessmode: W_OK|R_OK
 
@@ -336,7 +336,7 @@ exit:
 //////////////////////////////////////////////////////////////////////////////
 
 // Does not change anything when argument == NULL
-int ProcessSetArgument(ID3V2 *id3v2, const unsigned int ID, char *argument, unsigned char encoding)
+int ProcessSetArgument(ID3V2 *id3v2, unsigned int ID, const char *argument, unsigned char encoding)
 {
     if(argument == NULL)
         return 0;
@@ -365,8 +365,8 @@ int ProcessSetArgument(ID3V2 *id3v2, const unsigned int ID, char *argument, unsi
 
         case 'APIC':
             {
-                void *picture = NULL;
-                unsigned int picsize;
+                void  *picture = NULL;
+                size_t picsize;
                 error = RAWFILE_Read(argument, &picture, &picsize);
                 if(error)
                 {
@@ -399,7 +399,7 @@ int ProcessSetArgument(ID3V2 *id3v2, const unsigned int ID, char *argument, unsi
 
 //----------------------------------------------------------------------------
 
-int ProcessGetArgument(ID3V2 *id3v2, const unsigned int ID, const char *name)
+int ProcessGetArgument(const ID3V2 *id3v2, unsigned int ID, const char *name)
 {
     int    error;
     size_t bufferlimit = 1024;
@@ -456,7 +456,7 @@ int ProcessGetArgument(ID3V2 *id3v2, const unsigned int ID, const char *name)
 
 //----------------------------------------------------------------------------
 
-int StoreArtwork(ID3V2 *id3v2, char *storepath)
+int StoreArtwork(ID3V2 *id3v2, const char *storepath)
 {
     char   *mimetype = NULL;
     void   *picture  = NULL;
@@ -478,10 +478,10 @@ int StoreArtwork(ID3V2 *id3v2, char *storepath)
 
 //----------------------------------------------------------------------------
 
-int ShowFramelist(ID3V2 *id3v2)
+int ShowFramelist(const ID3V2 *id3v2)
 {
     // start printing frames
-    ID3V2_FRAME *frame;
+    ID3V2_FRAME  *frame;
     unsigned char majorversion;
 
     frame        = id3v2->framelist;
@@ -581,7 +581,7 @@ int ShowFramelist(ID3V2 *id3v2)
         printf("%s 0x%04X ", (frame->flags == 0x0000)?"\e[1;34m":"\e[1;31m", frame->flags);
 
         // if frame is a text-frame, get some more infos - also for APIC
-        unsigned char *data = (unsigned char*)frame->data;
+        unsigned char *data;
         data = (unsigned char*)frame->data;
         if((frame->ID >> 24) == 'T')
         {
@@ -603,7 +603,7 @@ int ShowFramelist(ID3V2 *id3v2)
             if(encoding == ID3V2TEXTENCODING_UTF16_BOM)
             {
                 unsigned short *utf16data;
-                unsigned short byteorder;
+                unsigned short  byteorder;
                 utf16data = (unsigned short*)&data[1];
                 byteorder = utf16data[0];
                 if(byteorder == UTF16BOM_BE)
@@ -662,7 +662,7 @@ int ShowFramelist(ID3V2 *id3v2)
 
 //----------------------------------------------------------------------------
 
-int DumpFrame(ID3V2 *id3v2, char *frameid)
+int DumpFrame(const ID3V2 *id3v2, const char *frameid)
 {
     ID3V2_FRAME *frame;
     unsigned int ID = be32toh(*(unsigned int*)frameid);
@@ -751,7 +751,7 @@ int DumpFrame(ID3V2 *id3v2, char *frameid)
 //////////////////////////////////////////////////////////////////////////////
 
 // If encoding == NULL; only check if the name is valid
-int GetEncoding(char *codename, unsigned char *encoding)
+int GetEncoding(const char *codename, unsigned char *encoding)
 {
     // Make string uniform
     size_t size;
@@ -825,7 +825,7 @@ int CopyArgument(char **dst, char *src)
     if(*dst != NULL)
         return -1;
 
-    int length = strlen(src);
+    size_t length = strlen(src);
     *dst = malloc(sizeof(char)*length+1); // +1 for the \0
     if(*dst == NULL)
     {

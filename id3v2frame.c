@@ -10,12 +10,12 @@
 #include <printhex.h>
 #endif
 
-int ID3V2_GetTextFrame(ID3V2 *id3v2, const unsigned int ID, char *utf8text, size_t bufferlimit)
+int ID3V2_GetTextFrame(const ID3V2 *id3v2, unsigned int ID, char *utf8text, size_t bufferlimit)
 {
     int error;
 
     // Get raw data
-    unsigned int   framesize;
+    size_t         framesize;
     unsigned char *framedata;
     error = ID3V2_GetFrame(id3v2, ID, &framesize, (void**)&framedata);
     if(error)
@@ -44,16 +44,16 @@ int ID3V2_GetTextFrame(ID3V2 *id3v2, const unsigned int ID, char *utf8text, size
 
 //////////////////////////////////////////////////////////////////////////////
 
-int ID3V2_SetTextFrame(ID3V2 *id3v2, const unsigned int ID, char *utf8text, unsigned char encoding)
+int ID3V2_SetTextFrame(ID3V2 *id3v2, unsigned int ID, const char *utf8text, unsigned char encoding)
 {
     if(utf8text == NULL)
         return ID3V2ERROR_NOERROR;
 
-    int error;
-    size_t textlength       = strlen(utf8text) + 1; // count '\0' as well
+    int    error;
+    size_t textlength      = strlen(utf8text) + 1; // count '\0' as well
     void  *rawtext;
     size_t rawtextsize;
-    size_t textbufferlimit  = textlength * 4;       // 4 time the uft-8 encoded size is enough
+    size_t textbufferlimit = textlength * 4;       // 4 time the uft-8 encoded size is enough
 
     rawtext = malloc(textlength * 4);
     if(rawtext == NULL)
@@ -111,13 +111,13 @@ int ID3V2_SetTextFrame(ID3V2 *id3v2, const unsigned int ID, char *utf8text, unsi
 
 //////////////////////////////////////////////////////////////////////////////
 
-int ID3V2_GetPictureFrame(ID3V2 *id3v2, const unsigned char pictype, 
+int ID3V2_GetPictureFrame(const ID3V2 *id3v2, unsigned char pictype, 
                           char **mimetype, char **description, void **picture, size_t *picsize)
 {
     int error;
 
     // Get raw data
-    unsigned int   rawsize;
+    size_t         rawsize;
     int            rawoffset = 0;  // tracing offset through the process to know where we are in the frame
     unsigned char *rawdata;
     error = ID3V2_GetFrame(id3v2, 'APIC', &rawsize, (void**)&rawdata);
@@ -256,9 +256,9 @@ int ID3V2_GetPictureFrame(ID3V2 *id3v2, const unsigned char pictype,
 
 //////////////////////////////////////////////////////////////////////////////
 
-int ID3V2_SetPictureFrame(ID3V2 *id3v2, const unsigned char pictype, 
+int ID3V2_SetPictureFrame(ID3V2 *id3v2, unsigned char pictype, 
                           const char *mimetype, const char *description, unsigned char encoding,
-                          void *picture, size_t picsize)
+                          const void *picture, size_t picsize)
 {
     int error;
 
@@ -303,7 +303,7 @@ int ID3V2_SetPictureFrame(ID3V2 *id3v2, const unsigned char pictype,
     }
 
     // Build frame
-    unsigned int   framesize   = 0;
+    size_t         framesize   = 0;
     unsigned char *framedata   = NULL;
     unsigned int   frameoffset = 0;
 
@@ -331,7 +331,7 @@ int ID3V2_SetPictureFrame(ID3V2 *id3v2, const unsigned char pictype,
     memcpy(framedata+frameoffset, picture, picsize);        // picture data
 
 #ifdef DEBUG
-    unsigned int mimesize = strlen(mimetype);
+    size_t mimesize = strlen(mimetype);
     printhex(framedata, 128, 16, 
             0,                            "\e[1;36m", // encoding
             1,                            "\e[1;35m", // mime type

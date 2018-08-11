@@ -15,7 +15,7 @@
  *           after getting the addressed Frame.
  * bufferlimit: is the size of the utf8text buffer in bytes
  */
-int ID3V2_GetTextFrame(ID3V2 *id3v2, const unsigned int ID, char *utf8text, size_t bufferlimit);
+int ID3V2_GetTextFrame(const ID3V2 *id3v2, unsigned int ID, char *utf8text, size_t bufferlimit);
 
 /*
  * ID: 4 Byte Frame ID
@@ -24,7 +24,7 @@ int ID3V2_GetTextFrame(ID3V2 *id3v2, const unsigned int ID, char *utf8text, size
  *
  * !! When an encoding is used that is not supported by the given ID3 version, the version gets updated in the ID3V2 struct
  */
-int ID3V2_SetTextFrame(ID3V2 *id3v2, const unsigned int ID, char *utf8text, unsigned char encoding);
+int ID3V2_SetTextFrame(ID3V2 *id3v2, unsigned int ID, const char *utf8text, unsigned char encoding);
 
 #define ID3V2_MAXPICTUREDESCRIPTIONSIZE ((64+1)*2) /*max 64 Chars + termination character UTF-16 encoded*/
 /*
@@ -32,12 +32,12 @@ int ID3V2_SetTextFrame(ID3V2 *id3v2, const unsigned int ID, char *utf8text, unsi
  * description: can be NULL
  * encoding: The ID3V2TEXTENCODING to use to encode the text
  */
-int ID3V2_GetPictureFrame(ID3V2 *id3v2, const unsigned char pictype, 
+int ID3V2_GetPictureFrame(const ID3V2 *id3v2, unsigned char pictype, 
                           char **mimetype, char **description, void **picture, size_t *picsize);
 
-int ID3V2_SetPictureFrame(ID3V2 *id3v2, const unsigned char pictype, 
+int ID3V2_SetPictureFrame(ID3V2 *id3v2, unsigned char pictype, 
                           const char *mimetype, const char *description, unsigned char encoding,
-                          void *picture, size_t picsize);
+                          const void *picture, size_t picsize);
 #endif
 
 
