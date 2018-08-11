@@ -353,10 +353,7 @@ int ID3V2_SetPictureFrame(ID3V2 *id3v2, const unsigned char pictype,
     // Update ID3 version
     if(encoding == ID3V2TEXTENCODING_UTF16_BE || encoding == ID3V2TEXTENCODING_UTF8)
     {
-        if(id3v2->header.version_major == 3)
-        {
-            id3v2->header.version_major = 4;    // the used encoding is only allows in ID3v2.4.0
-        }
+        id3v2->header.version_major = 4;    // the used encoding is only allows in ID3v2.4.0
     }
 
     // done

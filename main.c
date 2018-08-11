@@ -42,7 +42,7 @@ void PrintUsage()
     printf("\t\e[1;36m --set-artist  \e[35m name \e[34m Artist name   \e[0;36mTPE1\e[35m Rammstein\n");
     printf("\t\e[1;36m               \e[35m      \e[31m               \e[0;36mTPE2\e[35m          \n");
     printf("\t\e[1;36m --set-artwork \e[35m path \e[34m Artwork       \e[0;36mAPIC\e[35m ./pic.jpg\n");
-    printf("\t\e[1;36m               \e[35m      \e[31m  !!  Just jpg supported! - NO CHECK\n");
+    printf("\t\e[1;36m               \e[35m      \e[31m  !!  Just jpeg supported! - NO CHECK\n");
     printf("\t\e[1;36m --set-release \e[35m year \e[34m Release year  \e[0;36mTYER\e[35m 2001 \e[1;30m(ID3v2.3.0)\n");
     printf("\t\e[1;36m               \e[35m      \e[34m               \e[0;36mTDRC\e[35m 2001 \e[1;30m(ID3v2.4.0)\n");
     printf("\t\e[1;36m --set-track   \e[35m track\e[34m Track number  \e[0;36mTRCK\e[35m 03/11    \n");
@@ -59,13 +59,12 @@ void PrintUsage()
     printf("\t\e[1;36m --get-all     \e[35m      \e[34m Show all meta data \n");
     printf("\t\e[1;36m --get-frames  \e[35m      \e[34m Show all frames    \n");
     printf("\n");
-     // (TDRC für das jahr ??? lt mutagenx)
 
     // Other options
     printf("\e[1;34m Other options:\n\e[1;37m");
     printf("\t\e[1;46m  Option       \e[45m Arg. \e[44m  Description      \e[1;45m  Example  \e[0m\n");
-    printf("\t\e[1;36m --outfile     \e[35m path \e[34m path to mp3       \e[0;35m ./new.mp3\n");
-    printf("\t\e[1;36m --dump        \e[35m ID   \e[34m Hexdump of a tag  \e[0;35m TXXX     \n");
+    printf("\t\e[1;36m --outfile     \e[35m path \e[34m Path to store mp3 \e[0;35m ./new.mp3\n");
+    printf("\t\e[1;36m --dump        \e[35m ID   \e[34m Hex dump of a tag \e[0;35m TXXX     \n");
     printf("\t\e[1;36m --encoding    \e[35m code \e[34m Frame encoding \e[1;31m¹  \e[0;35m utf-8    \n");
     printf("\n");
 
@@ -76,7 +75,7 @@ void PrintUsage()
     printf("\t\e[1;36m --create      \e[1;34m Create ID3v2 Tag iff it\'s a bare mp3 file \n");
     printf("\t\e[1;36m --clear       \e[1;34m Remove all ID3v2 frames before adding new \n");
     printf("\t\e[1;36m --strip       \e[1;34m Remove whole ID3 Tag \e[1;30m(leaves a bare audio file) \n");
-    printf("\t\e[1;36m --showheader  \e[1;34m Prints details of the headers while reading \n");
+    printf("\t\e[1;36m --showheader  \e[1;34m Print details of the headers while reading \n");
     printf("\t\e[1;36m --force230    \e[1;34m Force ID3 v 2.3.0 when writing \e[1;31m²\n");
     printf("\t\e[1;36m --force240    \e[1;34m Force ID3 v 2.4.0 when writing \n");
     printf("\n");
@@ -184,8 +183,8 @@ int main(int argc, char *argv[])
         GETFLAG(force230,     "--force230")
         GETFLAG(force240,     "--force240")
         GETFLAG(OPT_PrintHeader, "--showheader")    // Global flag for the id3v2.c code
-        GETFLAG(getframelist, "--get-frames")
-        GETFLAG(getframelist, "--get-framelist")
+        GETFLAG(getframelist, "--get-frames")       // \_ Allow both options to show a list of frames
+        GETFLAG(getframelist, "--get-framelist")    // /
         GETFLAG(getall,       "--get-all")
         GETFLAG(getname,      "--get-name")
         GETFLAG(getalbum,     "--get-album")
