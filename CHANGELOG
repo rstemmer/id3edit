@@ -5,6 +5,7 @@
          +- Added --force240 to force the version number to ID3v2.4.0
          +- Added --strip to remove the whole ID3 Tag from the file
          +- Added --encoding to change the default text encoding for frames
+         +- Added support for TDRC frames to allow ID3v2.4.0 compatible release dates
 
 1.11.5 - Fixed a critical bug loosing 10 bytes when creating a ID3 Tag for a raw mp3 file
 1.11.4 - Changed mime-type for artwork (--set-artwork) from image/jpg to image/jpeg to make it standard conform

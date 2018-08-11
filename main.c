@@ -43,8 +43,8 @@ void PrintUsage()
     printf("\t\e[1;36m               \e[35m      \e[31m               \e[0;36mTPE2\e[35m          \n");
     printf("\t\e[1;36m --set-artwork \e[35m path \e[34m Artwork       \e[0;36mAPIC\e[35m ./pic.jpg\n");
     printf("\t\e[1;36m               \e[35m      \e[31m  !!  Just jpg supported! - NO CHECK\n");
-    printf("\t\e[1;36m --set-release \e[35m year \e[34m Release year  \e[0;36mTYER\e[35m 2001     \n");
-    printf("\t\e[1;36m               \e[35m      \e[31m              (\e[0;36mTDRC\e[1;31m) not implemented\n");
+    printf("\t\e[1;36m --set-release \e[35m year \e[34m Release year  \e[0;36mTYER\e[35m 2001 \e[1;30m(ID3v2.3.0)\n");
+    printf("\t\e[1;36m               \e[35m      \e[34m               \e[0;36mTDRC\e[35m 2001 \e[1;30m(ID3v2.4.0)\n");
     printf("\t\e[1;36m --set-track   \e[35m track\e[34m Track number  \e[0;36mTRCK\e[35m 03/11    \n");
     printf("\t\e[1;36m --set-cd      \e[35m cd   \e[34m CD number     \e[0;36mTPOS\e[35m 1/1      \n");
     // getter
@@ -101,7 +101,8 @@ void PrintUsage()
     printf("\n");
 
     printf("\e[1;31m  ² \e[1;33mIt is up to you to make sure all frames are conform to that version of the standard!\e[0m\n");
-    printf("\e[1;30m    ID3v2.3.0 only allows UTF-16+BOM or ISO8859-1 encoded text\e[0m\n");
+    printf("\e[1;30m    ID3v2.3.0 only allows UTF-16+BOM or ISO8859-1 encoded text.\e[0m\n");
+    printf("\e[1;30m    Some frame IDs are different! (use --get-framelist to check the new file)\e[0m\n");
     printf("\n");
 
     // Some warnings
@@ -259,6 +260,7 @@ int main(int argc, char *argv[])
     PROCESSGETARGUMENT(getartist,  'TPE1', "\e[0;36m TPE1 \e[1;34m Artist:   \e[36m")
     PROCESSGETARGUMENT(getartist,  'TPE2', "\e[0;36m TPE2 \e[1;34m           \e[36m")
     PROCESSGETARGUMENT(getrelease, 'TYER', "\e[0;36m TYER \e[1;34m Release:  \e[36m")
+    PROCESSGETARGUMENT(getrelease, 'TDRC', "\e[0;36m TDRC \e[1;34m           \e[36m")
     PROCESSGETARGUMENT(gettracknr, 'TRCK', "\e[0;36m TRCK \e[1;34m Track:    \e[36m")
     PROCESSGETARGUMENT(getcdnr,    'TPOS', "\e[0;36m TPOS \e[1;34m CD:       \e[36m")
     if(storeaw != NULL)
@@ -274,10 +276,18 @@ int main(int argc, char *argv[])
     if(ProcessSetArgument(id3v2, 'TALB', newalbum,   encoding) != 0) goto exit;
     if(ProcessSetArgument(id3v2, 'TPE1', newartist,  encoding) != 0) goto exit;
     if(ProcessSetArgument(id3v2, 'TPE2', newartist,  encoding) != 0) goto exit;
-    if(ProcessSetArgument(id3v2, 'TYER', newrelease, encoding) != 0) goto exit;
     if(ProcessSetArgument(id3v2, 'TRCK', newtracknr, encoding) != 0) goto exit;
     if(ProcessSetArgument(id3v2, 'TPOS', newcdnr,    encoding) != 0) goto exit;
     if(ProcessSetArgument(id3v2, 'APIC', newartwork, encoding) != 0) goto exit;
+    // Version depending tags
+    if(id3v2->header.version_major == 3 || force230)
+    {
+        if(ProcessSetArgument(id3v2, 'TYER', newrelease, encoding) != 0) goto exit;
+    }
+    else if(id3v2->header.version_major == 4 || force240)
+    {
+        if(ProcessSetArgument(id3v2, 'TDRC', newrelease, encoding) != 0) goto exit;
+    }
 
     // CLOSE
     if(readonly)
@@ -326,6 +336,7 @@ int ProcessSetArgument(ID3V2 *id3v2, const unsigned int ID, char *argument, unsi
     switch(ID)
     {
         case 'TYER': // The 'Year' frame is a numeric string. It is always four characters long.
+        case 'TDRC': // The 'Year' for ID3v2.4.0
         case 'TRCK': // E.g. "4/9"
         case 'TPOS': // E.g. "1/2"
         case 'TIT2':
@@ -393,6 +404,7 @@ int ProcessGetArgument(ID3V2 *id3v2, const unsigned int ID, const char *name)
     switch(ID)
     {
         case 'TYER': // The 'Year' frame is a numeric string. It is always four characters long.
+        case 'TDRC': // The 'Year' for ID3v2.4.0
         case 'TRCK': // E.g. "4/9"
         case 'TPOS': // E.g. "1/2"
         case 'TIT2':
@@ -533,6 +545,7 @@ int ShowFramelist(ID3V2 *id3v2)
         {
             case 'APIC':
             case 'TYER':
+            case 'TDRC':
             case 'TRCK':
             case 'TPOS':
             case 'TIT2':

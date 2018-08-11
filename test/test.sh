@@ -162,6 +162,17 @@ PrintTest "Set ISO 8859-1 encoded Text Frame"
 ./id3edit --encoding ISO8859-1 --set-name "This is ä test" $DST
 CheckResult "bc742aadbef2587ced763374a838d3c5"
 
+PrintTest "Set release year for ID3v2.3.0"
+CreateTestMP3
+./id3edit --create --force230 --set-name "Release Test" --outfile $DST $SRC
+./id3edit --set-release 2018 $DST
+CheckResult "a2b6e5f4f3bbc04e3fb063d3d59eb7d2"
+
+PrintTest "Set release year for ID3v2.4.0"
+CreateTestMP3
+./id3edit --create --force240 --set-name "Release Test" --outfile $DST $SRC
+./id3edit --set-release 2018 $DST
+CheckResult "f232bccc746f8cc5ea7b9756104835f5"
 
 
 PrintHeader "Creating and editing artwork"
