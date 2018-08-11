@@ -662,10 +662,12 @@ int DumpFrame(ID3V2 *id3v2, char *frameid)
             // Meta-data:
             printf("\e[1;34mID: \e[1;36m%c%c%c%c ", ID3V2ID_TO_CHARS(frame->ID));
             printf("\e[1;34m, Size: \e[0;36m%6i ", frame->size);
-            printf("\e[1;34m, Flags: \e[0;36m0x%04X\e[0m\n", frame->flags);
+            printf("\e[1;34m, Flags: %s0x%04X\e[0m\n", (frame->flags==0x0000)?"\e[0;36m":"\e[0;31m", frame->flags);
 
             unsigned char *data = (unsigned char*)frame->data;
             data = (unsigned char*)frame->data;
+
+            // Text Frame
             if((frame->ID >> 24) == 'T')
             {
                 // encoding
@@ -677,6 +679,47 @@ int DumpFrame(ID3V2 *id3v2, char *frameid)
                         1, (encoding==0x01)?"\e[1;35m":"\e[1;34m",  // BOM
                         3, "\e[1;34m", -1);
             }
+            // Picture Frame
+            else if(frame->ID == 'APIC')
+            {
+                // encoding
+                unsigned char encoding = data[0];
+                size_t        mimesize = strlen((char*)&data[1]);
+                unsigned char pictype  = data[mimesize+2];
+                unsigned int  descstart= (encoding==0x01)?(mimesize+4):(mimesize+3);
+                size_t        descsize = 0;
+
+                // determine description length
+                for(unsigned int i=descstart;; i++)
+                {
+                    if(encoding == ID3V2TEXTENCODING_UTF16_BOM || encoding == ID3V2TEXTENCODING_UTF16_BE) // 2 byte encodings
+                    {
+                        descsize += 2;
+                        if(data[i] == 0x00 && data[i + 1] == 0x00)
+                        {
+                            break;
+                        }
+                        i++;
+                    }
+                    else // 1 byte encodings
+                    {
+                        descsize += 1;
+                        if(data[i] == 0x00)
+                        {
+                            break;
+                        }
+                    }
+                }
+
+                printhex(data, 0x100, 16, 
+                    0,                  "\e[1;36m", // encoding
+                    1,                  "\e[1;35m", // mime-type
+                    1+mimesize+1,       (pictype ==0x03)?"\e[1;32m":"\e[1;31m", // pictype
+                    descstart,          "\e[0;35m", // description
+                    descstart+descsize, "\e[1;34m", // pic-data
+                    -1);
+            }
+            // Unknown Frame
             else
             {
                 printhex(frame->data, (frame->size > 0x100)?0x100:frame->size, 16, 
