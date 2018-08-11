@@ -43,6 +43,7 @@ void PrintUsage()
     printf("\t\e[1;36m               \e[35m      \e[31m               \e[0;36mTPE2\e[35m          \n");
     printf("\t\e[1;36m --set-artwork \e[35m path \e[34m Artwork       \e[0;36mAPIC\e[35m ./pic.jpg\n");
     printf("\t\e[1;36m               \e[35m      \e[31m  !!  Just jpeg supported! - NO CHECK\n");
+    printf("\t\e[1;36m --set-genre   \e[35m genre\e[34m Genre name    \e[0;36mTCON\e[35m Metal    \n");
     printf("\t\e[1;36m --set-release \e[35m year \e[34m Release year  \e[0;36mTYER\e[35m 2001 \e[1;30m(ID3v2.3.0)\n");
     printf("\t\e[1;36m               \e[35m      \e[34m               \e[0;36mTDRC\e[35m 2001 \e[1;30m(ID3v2.4.0)\n");
     printf("\t\e[1;36m --set-track   \e[35m track\e[34m Track number  \e[0;36mTRCK\e[35m 03/11    \n");
@@ -52,6 +53,7 @@ void PrintUsage()
                                                                     "\e[0;35mname\e[1;34m,"
                                                                     "\e[0;35malbum\e[1;34m,"
                                                                     "\e[0;35martist\e[1;34m,"
+                                                                    "\e[0;35mgenre\e[1;34m,"
                                                                     "\e[0;35mrelease\e[1;34m,"
                                                                     "\e[0;35mtrack\e[1;34m,"
                                                                     "\e[0;35mcd\e[1;34m}\n");
@@ -146,6 +148,7 @@ int main(int argc, char *argv[])
     char *newalbum  = NULL;
     char *newartist = NULL;
     char *newartwork= NULL;
+    char *newgenre  = NULL;
     char *newrelease= NULL;
     char *newtracknr= NULL;
     char *newcdnr   = NULL;
@@ -164,6 +167,7 @@ int main(int argc, char *argv[])
     bool getname    = false;
     bool getalbum   = false;
     bool getartist  = false;
+    bool getgenre   = false;
     bool getrelease = false;
     bool gettracknr = false;
     bool getcdnr    = false;
@@ -189,6 +193,7 @@ int main(int argc, char *argv[])
         GETFLAG(getname,      "--get-name")
         GETFLAG(getalbum,     "--get-album")
         GETFLAG(getartist,    "--get-artist")
+        GETFLAG(getgenre,     "--get-genre")
         GETFLAG(getrelease,   "--get-release")
         GETFLAG(gettracknr,   "--get-track")
         GETFLAG(getcdnr,      "--get-cd")
@@ -200,6 +205,7 @@ int main(int argc, char *argv[])
         GETARG(newalbum,   "--set-album")
         GETARG(newartist,  "--set-artist")
         GETARG(newartwork, "--set-artwork")
+        GETARG(newgenre,   "--set-genre")
         GETARG(newrelease, "--set-release")
         GETARG(newtracknr, "--set-track")
         GETARG(newcdnr,    "--set-cd")
@@ -259,7 +265,8 @@ int main(int argc, char *argv[])
     PROCESSGETARGUMENT(getalbum,   'TALB', "\e[0;36m TALB \e[1;34m Album:    \e[36m")
     PROCESSGETARGUMENT(getartist,  'TPE1', "\e[0;36m TPE1 \e[1;34m Artist:   \e[36m")
     PROCESSGETARGUMENT(getartist,  'TPE2', "\e[0;36m TPE2 \e[1;34m           \e[36m")
-    PROCESSGETARGUMENT(getrelease, 'TYER', "\e[0;36m TYER \e[1;34m Release:  \e[36m")
+    PROCESSGETARGUMENT(getgenre,   'TCON', "\e[0;36m TYER \e[1;34m Genre:    \e[36m")
+    PROCESSGETARGUMENT(getrelease, 'TYER', "\e[0;36m TCON \e[1;34m Release:  \e[36m")
     PROCESSGETARGUMENT(getrelease, 'TDRC', "\e[0;36m TDRC \e[1;34m           \e[36m")
     PROCESSGETARGUMENT(gettracknr, 'TRCK', "\e[0;36m TRCK \e[1;34m Track:    \e[36m")
     PROCESSGETARGUMENT(getcdnr,    'TPOS', "\e[0;36m TPOS \e[1;34m CD:       \e[36m")
@@ -276,6 +283,7 @@ int main(int argc, char *argv[])
     if(ProcessSetArgument(id3v2, 'TALB', newalbum,   encoding) != 0) goto exit;
     if(ProcessSetArgument(id3v2, 'TPE1', newartist,  encoding) != 0) goto exit;
     if(ProcessSetArgument(id3v2, 'TPE2', newartist,  encoding) != 0) goto exit;
+    if(ProcessSetArgument(id3v2, 'TCON', newgenre,   encoding) != 0) goto exit;
     if(ProcessSetArgument(id3v2, 'TRCK', newtracknr, encoding) != 0) goto exit;
     if(ProcessSetArgument(id3v2, 'TPOS', newcdnr,    encoding) != 0) goto exit;
     if(ProcessSetArgument(id3v2, 'APIC', newartwork, encoding) != 0) goto exit;
@@ -316,6 +324,7 @@ exit:
     SafeFree(newartist);
     SafeFree(newartwork);
     SafeFree(newrelease);
+    SafeFree(newgenre);
     SafeFree(newtracknr);
     SafeFree(newcdnr);
     SafeFree(mp3path);
@@ -343,6 +352,7 @@ int ProcessSetArgument(ID3V2 *id3v2, const unsigned int ID, char *argument, unsi
         case 'TALB':
         case 'TPE1':
         case 'TPE2':
+        case 'TCON':
             {
                 error = ID3V2_SetTextFrame(id3v2, ID, argument, encoding);
                 if(error)
@@ -411,6 +421,7 @@ int ProcessGetArgument(ID3V2 *id3v2, const unsigned int ID, const char *name)
         case 'TALB':
         case 'TPE1':
         case 'TPE2':
+        case 'TCON':
             {
                 printf("%s", name);
                 error = ID3V2_GetTextFrame(id3v2, ID, textbuffer, bufferlimit);
@@ -552,6 +563,7 @@ int ShowFramelist(ID3V2 *id3v2)
             case 'TALB':
             case 'TPE1':
             case 'TPE2':
+            case 'TCON':
                 printf("\e[1;36m"); // supported
                 break;
 
