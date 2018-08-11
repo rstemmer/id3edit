@@ -457,10 +457,6 @@ int StoreArtwork(ID3V2 *id3v2, char *storepath)
 
 int ShowFramelist(ID3V2 *id3v2)
 {
-    // Headline
-    printf("\e[1;37m");
-    printf("\e[46m ID \e[44m  Size  \e[44m  Flags  \e[44m Encoding                      \e[0m\n");
-
     // start printing frames
     ID3V2_FRAME *frame;
     unsigned char majorversion;
@@ -468,9 +464,71 @@ int ShowFramelist(ID3V2 *id3v2)
     frame        = id3v2->framelist;
     majorversion = id3v2->header.version_major;
 
+    // Headline
+    printf("\e[1;37m ↱ "
+           "\e[1;33m!\e[1;34m: Deprecated in ID3v2.4.0; "
+           "\e[1;31m✘\e[1;34m: Undefined in ID3v2.3.0; "
+           "\e[1;32m✔\e[1;34m: Valid\n");
+    printf("\e[1;37m");
+    printf("\e[44m   \e[46m  ID  \e[44m  Size  \e[44m  Flags  \e[44m Encoding                                \e[0m\n");
+
     while(frame)
     {
-        // print ID - color shall indicate if supported or not
+
+        // Print ID
+        // Check if ID is deprecated in ID3v2.4.0
+        if(majorversion == 4)
+        {
+            switch(frame->ID)
+            {
+                case 'EQUA':
+                case 'IPLS':
+                case 'RVAD':
+                case 'TDAT':
+                case 'TIME':
+                case 'TORY':
+                case 'TRDA':
+                case 'TSIZ':
+                case 'TYER':
+                    printf("\e[1;33m ! "); // deprecated
+                    break;
+                default:
+                    printf("\e[1;32m ✔ ");
+                    break;
+            }
+        }
+        // Check if ID is already defined for ID3v2.3.0
+        else if(majorversion == 3)
+        {
+            switch(frame->ID)
+            {
+                case 'ASPI':
+                case 'EQU2':
+                case 'RVA2':
+                case 'SEEK':
+                case 'SIGN':
+                case 'TDEN':
+                case 'TDOR':
+                case 'TDRC':
+                case 'TDRL':
+                case 'TDTG':
+                case 'TIPL':
+                case 'TMCL':
+                case 'TMOO':
+                case 'TPRO':
+                case 'TSOA':
+                case 'TSOP':
+                case 'TSOT':
+                case 'TSST':
+                    printf("\e[1;31m ✘ "); // undefined for 2.3.0
+                    break;
+                default:
+                    printf("\e[1;32m ✔ ");
+                    break;
+            }
+        }
+
+        // color shall indicate if supported or not
         switch(frame->ID)
         {
             case 'APIC':
@@ -485,10 +543,11 @@ int ShowFramelist(ID3V2 *id3v2)
                 break;
 
             default:
-                printf("\e[1;31m"); // not supported
+                printf("\e[1;30m"); // not supported
                 break;
         }
-        printf("%c%c%c%c", ID3V2ID_TO_CHARS(frame->ID));
+
+        printf(" %c%c%c%c ", ID3V2ID_TO_CHARS(frame->ID));
 
         // size
         printf("\e[1;34m %6i ", frame->size);
@@ -572,6 +631,7 @@ int ShowFramelist(ID3V2 *id3v2)
         // get next frame
         frame = (ID3V2_FRAME*)frame->next;
     }
+
     return 0;
 }
 
