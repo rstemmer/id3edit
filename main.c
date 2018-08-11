@@ -56,8 +56,8 @@ void PrintUsage()
                                                                     "\e[0;35mtrack\e[1;34m,"
                                                                     "\e[0;35mcd\e[1;34m}\n");
     printf("\t\e[1;36m --get-artwork \e[35m path \e[34m Store artwork      \n");
-    printf("\t\e[1;36m --get-all     \e[35m      \e[34m Show all Tags      \n");
-    printf("\t\e[1;36m --get-framelist\e[35m     \e[34m Show the framelist \n");
+    printf("\t\e[1;36m --get-all     \e[35m      \e[34m Show all meta data \n");
+    printf("\t\e[1;36m --get-frames  \e[35m      \e[34m Show all frames    \n");
     printf("\n");
      // (TDRC für das jahr ??? lt mutagenx)
 
@@ -184,6 +184,7 @@ int main(int argc, char *argv[])
         GETFLAG(force230,     "--force230")
         GETFLAG(force240,     "--force240")
         GETFLAG(OPT_PrintHeader, "--showheader")    // Global flag for the id3v2.c code
+        GETFLAG(getframelist, "--get-frames")
         GETFLAG(getframelist, "--get-framelist")
         GETFLAG(getall,       "--get-all")
         GETFLAG(getname,      "--get-name")
