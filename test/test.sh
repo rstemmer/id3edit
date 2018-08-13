@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+SRCPNGAW="./tmp/source.png"
+DSTPNGAW="./tmp/result.png"
 SRCAW="./tmp/source.jpg"
 DSTAW="./tmp/result.jpg"
 SRC="./tmp/source.mp3"
@@ -48,6 +50,13 @@ BhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElK
 U1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3
 uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwD3+iii
 gD//2Q==
+EOF
+}
+function CreateTestPNG {
+
+    base64 --decode > $SRCPNGAW << EOF
+iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAA
+C0lEQVQImWP4DwQACfsD/eNV8pwAAAAASUVORK5CYII=
 EOF
 }
 
@@ -178,22 +187,35 @@ CheckResult "f232bccc746f8cc5ea7b9756104835f5"
 PrintHeader "Creating and editing artwork"
 CreateTestMP3
 CreateTestJPG
+CreateTestPNG
 ./id3edit --create --clear $SRC
 
-PrintTest "Add artwork"
+PrintTest "Add jpeg artwork"
 ./id3edit --set-artwork $SRCAW --outfile $DST $SRC
 CheckResult "dba22cda9ec6a901a349403a800e3eb2"
 
-PrintTest "Get artwork"
+PrintTest "Get jpeg artwork"
 ./id3edit --get-artwork $DSTAW $DST
 SRCSUM=$(md5sum $SRCAW 2> /dev/null | cut -d " " -f 1)
 DSTSUM=$(md5sum $DSTAW 2> /dev/null | cut -d " " -f 1)
+CheckValues $SRCSUM $DSTSUM
+
+PrintTest "Add png artwork"
+./id3edit --set-artwork $SRCPNGAW --outfile $DST $SRC
+CheckResult "3cbcd065ef0bf995fa175dc88a90e168"
+
+PrintTest "Get png artwork"
+./id3edit --get-artwork $DSTPNGAW $DST
+SRCSUM=$(md5sum $SRCPNGAW 2> /dev/null | cut -d " " -f 1)
+DSTSUM=$(md5sum $DSTPNGAW 2> /dev/null | cut -d " " -f 1)
 CheckValues $SRCSUM $DSTSUM
 
 
 echo -e "\n\e[1;37mRemoving tests …\e[0m"
 rm $SRCAW
 rm $DSTAW
+rm $SRCPNGAW
+rm $DSTPNGAW
 rm $SRC
 rm $DST
 rm ./id3edit
