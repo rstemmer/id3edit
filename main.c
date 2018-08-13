@@ -427,7 +427,7 @@ int ProcessGetArgument(const ID3V2 *id3v2, unsigned int ID, const char *name)
                 error = ID3V2_GetTextFrame(id3v2, ID, textbuffer, bufferlimit);
                 if(error == ID3V2ERROR_FRAMENOTFOUND)
                 {
-                    printf("\e[0;31mFrame does not Exist\e[0m\n");
+                    printf("\e[0;33mFrame does not Exist\e[0m\n");
                 }
                 else if(error)
                 {
