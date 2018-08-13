@@ -214,16 +214,31 @@ int ID3V2_Open(ID3V2 **id3v2, const char *path, bool createtag)
             return ID3V2ERROR_FATAL;
         }
 
-        // read meta data
-        fread(&bigendian, 4, 1, id3->file); frame->ID    = be32toh(bigendian);
+        // read frame ID
+        fread(&bigendian, 4, 1, id3->file);
+        frame->ID = be32toh(bigendian);
         if(frame->ID == 0x00000000) // we are in the padding area, end of ID3 reached
         {
             free(frame); // no need for this frame
             offset += 4; // 4 bytes of the padding bytes already read
             break;       // this is the end of the list, reading completed
         }
-        fread(&bigendian, 4, 1, id3->file); frame->size  = be32toh(bigendian);
-        fread(&bigendian, 2, 1, id3->file); frame->flags = be16toh(bigendian);
+
+        // read size
+        unsigned int encsize; 
+        fread(&encsize, 4, 1, id3->file);
+        if(id3->header.version_major == 4) // ID3v2.4.0 uses a different encoding
+        {
+            frame->size = ID3V2_DecodeSize(encsize);
+        }
+        else
+        {
+            frame->size = be32toh(encsize);
+        }
+
+        // read flags
+        fread(&bigendian, 2, 1, id3->file);
+        frame->flags = be16toh(bigendian);
 
         // read data
         frame->data = malloc(frame->size);
@@ -390,10 +405,27 @@ int ID3V2_Close(ID3V2 *id3v2, const char *altpath, bool removetag)
 #ifdef DEBUG
             printf("\e[1;33mWriting… ");
 #endif
-            bigendian = htobe32(frame->ID);    fwrite(&bigendian, 4, 1, dstfile);
-            bigendian = htobe32(frame->size);  fwrite(&bigendian, 4, 1, dstfile);
-            bigendian = htobe16(frame->flags); fwrite(&bigendian, 2, 1, dstfile);
+            // write frame ID
+            bigendian = htobe32(frame->ID);
+            fwrite(&bigendian, 4, 1, dstfile);
+
+            // write frame size
+            unsigned int encsize; 
+            if(id3->header.version_major == 4) // ID3v2.4.0 uses a different encoding
+            {
+                encsize = ID3V2_EncodeSize(frame->size);
+            }
+            else
+            {
+                encsize = htobe32(frame->size);
+            }
+            fwrite(&encsize, 4, 1, dstfile);
+
+            // write frame flags
+            bigendian = htobe16(frame->flags);
+            fwrite(&bigendian, 2, 1, dstfile);
         
+            // write frame data
             fwrite(frame->data, 1, frame->size, dstfile);
 #ifdef DEBUG
             printf("\e[1;37mStored frame: ");

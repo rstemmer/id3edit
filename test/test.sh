@@ -190,7 +190,7 @@ CreateTestJPG
 CreateTestPNG
 ./id3edit --create --clear $SRC
 
-PrintTest "Add jpeg artwork"
+PrintTest "Add jpeg artwork for ID3v2.3.0"
 ./id3edit --set-artwork $SRCAW --outfile $DST $SRC
 CheckResult "dba22cda9ec6a901a349403a800e3eb2"
 
@@ -200,7 +200,11 @@ SRCSUM=$(md5sum $SRCAW 2> /dev/null | cut -d " " -f 1)
 DSTSUM=$(md5sum $DSTAW 2> /dev/null | cut -d " " -f 1)
 CheckValues $SRCSUM $DSTSUM
 
-PrintTest "Add png artwork"
+PrintTest "Add jpeg artwork for ID3v2.4.0"
+./id3edit --force240 --set-artwork $SRCAW --outfile $DST $SRC
+CheckResult "2d59c0d57dfd7c12e43c5e9d03f36fca"
+
+PrintTest "Add png artwork for ID3v2.3.0"
 ./id3edit --set-artwork $SRCPNGAW --outfile $DST $SRC
 CheckResult "3cbcd065ef0bf995fa175dc88a90e168"
 
