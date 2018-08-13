@@ -2,7 +2,7 @@
 
 `id3edit` is a command line editor to edit and **debug** ID3v2 tags ([ID3v2.3.0](http://id3.org/id3v2.3.0) & [ID3v2.4.0](http://id3.org/id3v2.4.0-structure) of mp3 files with full Unicode support.
 
-I separated it from the [MusicDB Project](https://github.com/rstemmer/musicdb) to give it its own repository and own issue tracker.
+I separated id3edit from the [MusicDB Project](https://github.com/rstemmer/musicdb) to give it its own repository and own issue tracker.
 
 **Its main features are:**
 
@@ -48,7 +48,7 @@ That's why I needed a "ID3 Debugger" and this project was born.
 Lessons learned: Also backup huge data collection and test foreign tools properly before using it in scripts :)
 
 After separating id3edit from [MusicDB](https://github.com/rstemmer/musicdb) I reviewed the whole code and added some missing features.
-Further more I added ID3v2.4.0 support.
+Furthermore I added ID3v2.4.0 support.
 So version 2.0.0 of id3edit was born.
 
 ## Examples
@@ -78,6 +78,7 @@ id3edit --set-name    "Example Song"         \\
         --set-track   "13/42"                \\
         --set-cd      "1/1"                  \\
         --clean                              \\
+        --encoding    utf-8                  \\
         --outfile Example\ Song.mp3          \\
         sourcefile.mp3
 
@@ -98,7 +99,8 @@ The file was originally tagged by a tool that claimed to support Unicode. As we 
 
  * `--get-all` prints all relevant frames.
 
-Obviously there are some encoding problems. We will look at the Song Name (`TIT2` Frame) in detail later.
+Obviously there are some encoding problems and two different release dates.
+We will look at the song name (`TIT2` frame) and genre (`TCON` frame) in detail later.
 
 #### Getting details of the damaged frames
 
@@ -107,15 +109,19 @@ Now we can use `id3edit` to further inspect the file to figure out what's wrong:
 ![Print all frames with details](screenshots/02.jpg?raw=true)
 
  * `--showheader` prints lots of details of the ID3 header and the frame headers while reading the ID3 Tag.
- * `--get-framelist` prints a list of all available frames including details of their size and encoding.
-    * Red IDs are IDs that are not directly supported by _id3edit_. (When they start with a `T` we can work with them anyway)
+ * `--get-frames` prints a list of all available frames including details of their size and encoding as well as other useful information.
+    * The first column checks if the frames are defined or deprecated in the specific ID3v2 standard.
+    * Gray IDs are IDs that are not directly supported by _id3edit_. (When they start with a `T` we can work with them anyway)
     * When there is a problem with the UTF-16 encoding, it gets mentioned in yellow.
+    * If there is an artwork embedded, details like the mime type and dimension of the image are displayed.
 
 The result of this first look into the details give us the following information:
 
- 1. There are frames not fully supported by _id3edit_ (`TSSE`, `TDRC`, `TCON`). That's why they do not appear in the result of `--get-all`. (This is not a problem)
- 2. The claimed size of the ID3 Tag is greater than the actual size. The size given in the ID3 Tag Header will be adjusted. This must not be a sign of an invalid Tag. ID3 allows padding bytes that get striped away by _id3edit_.
- 3. There are two BOMs (Byte Order Marks) in the `TCON` frame. This an indicator that the mp3 file was tagged by a software that is not ID3v2 conform and/or has problems with Unicode encoded data.
+ 1. There is a frame not fully supported by _id3edit_ (`TSSE`). That's why they do not appear in the result of `--get-all`. (This is not a problem)
+ 2. The `TDRC` frame is not defined in ID3v2.3.0 version of the standard that is defined by the header.
+ 3. The claimed size of the ID3 Tag is greater than the actual size. The size given in the ID3 Tag Header will be adjusted. This must not be a sign of an invalid Tag. ID3 allows padding bytes that get striped away by _id3edit_.
+ 4. There are two BOMs (Byte Order Marks) in the `TCON` frame. This is an indicator that the mp3 file was tagged by a software that is not ID3v2 conform and/or has problems with Unicode encoded data. It also explains why the genre name in the first screenshot looks so strange.
+ 5. The artworks width is shorter than its height. That's just ugly but not really a problem with the ID3 Tag itself.
 
 #### Check and repair song name
 
