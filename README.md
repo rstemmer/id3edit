@@ -23,7 +23,6 @@ I separated id3edit from the [MusicDB Project](https://github.com/rstemmer/music
 
 ## Limitations
 
- * It only supports JPEG images for album covers. (png support will be added in later versions)
  * It does not care about any flags (usually no ID3 Tag or Frame flags are set) (some flags that may appear in the wild will be added in later versions)
 
 ## Name Definitions
