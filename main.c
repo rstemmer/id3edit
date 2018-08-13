@@ -801,7 +801,7 @@ int DumpFrame(const ID3V2 *id3v2, const char *frameid)
                 unsigned char encoding = data[0];
                 size_t        mimesize = strlen((char*)&data[1]);
                 unsigned char pictype  = data[mimesize+2];
-                unsigned int  descstart= (encoding==0x01)?(mimesize+4):(mimesize+3);
+                unsigned int  descstart= mimesize+3;
                 size_t        descsize = 0;
 
                 // determine description length
