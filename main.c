@@ -682,6 +682,76 @@ int ShowFramelist(const ID3V2 *id3v2)
             else
                 printf("\e[1;31m ");
             printf("%-15s ", mimetype);
+
+            // Try to figure out what dimensions the picture has
+            int error;
+            void *picture;
+            size_t picsize;
+            error = ID3V2_GetPictureFrame(id3v2, 0x03, NULL, NULL, &picture, &picsize);
+            if(error == ID3V2ERROR_NOERROR)
+            {
+                unsigned int width  = 0;
+                unsigned int height = 0;
+                if(strncmp(mimetype, "image/jpeg", 15) == 0
+                 ||strncmp(mimetype, "image/jpg",  15) == 0)
+                {
+                    unsigned char *picptr = picture;
+                    unsigned short chunksize;
+
+                    // Check for expected SOI marker
+                    if(picptr[0] != 0xFF || picptr[1] != 0xD8)
+                        goto read_jpeg_failed;
+
+                    // Jump over SOI marker
+                    picptr  += 2;
+                    picsize -= 2;
+
+                    // Find SOF0 marker
+                    while(picptr[0] != 0xFF || picptr[1] != 0xC0)
+                    {
+                        picptr   += 2; // \_ Jump over marker
+                        picsize  -= 2; // /
+                        chunksize = be16toh(*(unsigned short*)picptr);
+                        if(chunksize >= picsize || chunksize == 0)
+                            goto read_jpeg_failed;
+                        picptr   += chunksize; // Jump over chunk
+                        picsize  -= chunksize;
+                    }
+
+                    picptr   += 2; // Jump over marker
+                    picptr   += 2; // Jump over size
+                    picptr   += 1; // Jump over precision
+                    width     = be16toh(*(unsigned short*)picptr);
+                    picptr   += 2; // Jump over width
+                    height    = be16toh(*(unsigned short*)picptr);
+                }
+                else if(strncmp(mimetype, "image/png", 15) == 0)
+                {
+                    char *picptr = picture;
+                    picptr += 8; // 8 bytes signature
+                    picptr += 4; // Chunk length (4 bytes, big-endian)
+                    if(picptr[0] == 'I' && picptr[1] == 'H' && picptr[2] == 'D' && picptr[3] == 'R') // Header chunk
+                    {
+                        picptr += 4;
+                        width   = be32toh(*(unsigned int*)picptr);
+                        picptr += 4;
+                        height  = be32toh(*(unsigned int*)picptr);
+                    }
+                }
+read_jpeg_failed:
+                free(picture);
+
+                if(width == 0 || height == 0)
+                    printf("\e[1;31m");
+                else if(width > 10000 || height > 10000)
+                    printf("\e[1;31m");
+                else if(width != height)
+                    printf("\e[1;33m");
+                else
+                    printf("\e[1;34m");
+                printf("  %i × %i ", width, height);
+            }
+
         }
 
         printf("\e[0m\n");
