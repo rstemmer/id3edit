@@ -41,8 +41,7 @@ void PrintUsage()
     printf("\t\e[1;36m --set-album   \e[35m name \e[34m Album name    \e[0;36mTALB\e[35m Mutter   \n");
     printf("\t\e[1;36m --set-artist  \e[35m name \e[34m Artist name   \e[0;36mTPE1\e[35m Rammstein\n");
     printf("\t\e[1;36m               \e[35m      \e[31m               \e[0;36mTPE2\e[35m          \n");
-    printf("\t\e[1;36m --set-artwork \e[35m path \e[34m Artwork       \e[0;36mAPIC\e[35m ./pic.jpg\n");
-    printf("\t\e[1;36m               \e[35m      \e[31m  !!  Just jpeg supported! - NO CHECK\n");
+    printf("\t\e[1;36m --set-artwork \e[35m path \e[34m Artwork \e[1;31m¹     \e[0;36mAPIC\e[35m ./pic.jpg\n");
     printf("\t\e[1;36m --set-genre   \e[35m genre\e[34m Genre name    \e[0;36mTCON\e[35m Metal    \n");
     printf("\t\e[1;36m --set-release \e[35m year \e[34m Release year  \e[0;36mTYER\e[35m 2001 \e[1;30m(ID3v2.3.0)\n");
     printf("\t\e[1;36m               \e[35m      \e[34m               \e[0;36mTDRC\e[35m 2001 \e[1;30m(ID3v2.4.0)\n");
@@ -67,7 +66,7 @@ void PrintUsage()
     printf("\t\e[1;46m  Option       \e[45m Arg. \e[44m  Description      \e[1;45m  Example  \e[0m\n");
     printf("\t\e[1;36m --outfile     \e[35m path \e[34m Path to store mp3 \e[0;35m ./new.mp3\n");
     printf("\t\e[1;36m --dump        \e[35m ID   \e[34m Hex dump of a tag \e[0;35m TXXX     \n");
-    printf("\t\e[1;36m --encoding    \e[35m code \e[34m Frame encoding \e[1;31m¹  \e[0;35m utf-8    \n");
+    printf("\t\e[1;36m --encoding    \e[35m code \e[34m Frame encoding \e[1;31m²  \e[0;35m utf-8    \n");
     printf("\n");
 
     // Flags
@@ -78,12 +77,15 @@ void PrintUsage()
     printf("\t\e[1;36m --clear       \e[1;34m Remove all ID3v2 frames before adding new \n");
     printf("\t\e[1;36m --strip       \e[1;34m Remove whole ID3 Tag \e[1;30m(leaves a bare audio file) \n");
     printf("\t\e[1;36m --showheader  \e[1;34m Print details of the headers while reading \n");
-    printf("\t\e[1;36m --force230    \e[1;34m Force ID3 v 2.3.0 when writing \e[1;31m²\n");
+    printf("\t\e[1;36m --force230    \e[1;34m Force ID3 v 2.3.0 when writing \e[1;31m³\n");
     printf("\t\e[1;36m --force240    \e[1;34m Force ID3 v 2.4.0 when writing \n");
     printf("\n");
 
     // Comments / footnotes
-    printf("\e[1;31m  ¹ \e[1;34mChange the default text encoding from \e[1;36mUTF-16 with BOM\e[1;34m to one of the following:\e[0m\n");
+    printf("\e[1;31m  ¹ \e[1;34mSupport for \e[1;36mimage/jpeg\e[1;34m and \e[1;36mimage/png\e[1;34m. \e[1;30mFor more types create a bug report.\e[0m\n");
+    printf("\n");
+
+    printf("\e[1;31m  ² \e[1;34mChange the default text encoding from \e[1;36mUTF-16 with BOM\e[1;34m to one of the following:\e[0m\n");
     printf("\e[1;37m      \e[1;46m  Encoding  "
                          "\e[1;44m  Comment                           "
                          "\e[1;45m  Available since        \e[0m\n");
@@ -101,7 +103,7 @@ void PrintUsage()
                          "\e[1;35m ID3v2.4.0 \e[1;30m(recommended)\e[0m\n");
     printf("\n");
 
-    printf("\e[1;31m  ² \e[1;33mIt is up to you to make sure all frames are conform to that version of the standard!\e[0m\n");
+    printf("\e[1;31m  ³ \e[1;33mIt is up to you to make sure all frames are conform to that version of the standard!\e[0m\n");
     printf("\e[1;30m    ID3v2.3.0 only allows UTF-16+BOM or ISO8859-1 encoded text.\e[0m\n");
     printf("\e[1;30m    Some frame IDs are different! (use --get-framelist to check the new file)\e[0m\n");
     printf("\n");
@@ -365,6 +367,7 @@ int ProcessSetArgument(ID3V2 *id3v2, unsigned int ID, const char *argument, unsi
 
         case 'APIC':
             {
+                // Load Picture
                 void  *picture = NULL;
                 size_t picsize;
                 error = RAWFILE_Read(argument, &picture, &picsize);
@@ -374,9 +377,37 @@ int ProcessSetArgument(ID3V2 *id3v2, unsigned int ID, const char *argument, unsi
                     return -1;
                 }
 
+                // Determine mime type
+                const unsigned char *magicnumber;
+                const char          *mimetype;
+                magicnumber = (const unsigned char*)picture;
+                if(magicnumber[0] == 0xFF
+                && magicnumber[1] == 0xD8)
+                    mimetype = "image/jpeg";
+                else if(magicnumber[0] == 0x89 
+                     && magicnumber[1] == 0x50
+                     && magicnumber[2] == 0x4E
+                     && magicnumber[3] == 0x47)
+                    mimetype = "image/png";
+                else
+                {
+                    SafeFree(picture);
+                    fprintf(stderr, "Unknown image file type with (first 4 bytes: %02X, %02X, %02X, %02X! "
+                            "Only png and jpeg files supported!\n", 
+                            magicnumber[0],
+                            magicnumber[1],
+                            magicnumber[2],
+                            magicnumber[3]);
+
+                    return -1;
+                }
+
+                // Set APIC Frame
                 error = ID3V2_SetPictureFrame(id3v2, 0x03 /*front cover*/, 
-                                              "image/jpeg", NULL, encoding,
+                                              mimetype, NULL, encoding,
                                               picture, picsize);
+
+                // Free resources and check for error
                 SafeFree(picture);
                 if(error)
                 {
@@ -642,9 +673,11 @@ int ShowFramelist(const ID3V2 *id3v2)
         {
             char *mimetype;
             mimetype = (char*)(data + 1); // regarding to the specification this is a 0-terminated ISO 8859-1 string
-            if(strncmp(mimetype, "image/jpg", 10) == 0)
+            if(strncmp(mimetype, "image/jpg", 15) == 0)
+                printf("\e[1;33m ");
+            else if(strncmp(mimetype, "image/jpeg", 15) == 0)
                 printf("\e[1;34m ");
-            else if(strncmp(mimetype, "image/jpeg", 10) == 0)
+            else if(strncmp(mimetype, "image/png", 15) == 0)
                 printf("\e[1;34m ");
             else
                 printf("\e[1;31m ");

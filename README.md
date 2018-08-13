@@ -8,7 +8,7 @@ I separated it from the [MusicDB Project](https://github.com/rstemmer/musicdb) t
 
  * Show all frames of the ID3 tag (colloquial "mp3 tags")
  * Get/Add/Edit specific frames (see [Name Definitions](#name-definitions))
- * Get/Add artworks
+ * Get/Add artworks (Support for jpeg and png. Create an issue if you need more types.)
  * Remove frames or the whole tag
  * Print hex-dump of a specific frame
  * You can overwrite the input file or write to a new path
