@@ -1,28 +1,30 @@
 # id3edit
 
-`id3edit` is a command line editor to edit and **debug** [ID3v2](http://id3.org/id3v2.3.0) ID3v2 tags of mp3 files.
+`id3edit` is a command line editor to edit and **debug** ID3v2 tags ([ID3v2.3.0](http://id3.org/id3v2.3.0) & [ID3v2.4.0](http://id3.org/id3v2.4.0-structure) of mp3 files with full Unicode support.
 
 I separated it from the [MusicDB Project](https://github.com/rstemmer/musicdb) to give it its own repository and own issue tracker.
 
 **Its main features are:**
 
  * Show all frames of the ID3 tag (colloquial "mp3 tags")
- * Add/Edit/Remove specific tags
- * Add/Remove artworks
- * Print hex-dump of a specific tag
+ * Get/Add/Edit specific frames (see [Name Definitions](#name-definitions))
+ * Get/Add artworks
+ * Remove frames or the whole tag
+ * Print hex-dump of a specific frame
  * You can overwrite the input file or write to a new path
  * It is made to handle invalid tags and headers and debug them
+ * Can print a detailed list of all frames with comments when they are invalid
  * Supports Unicode correctly!
  * It works from command line
+ * Support for ID3v2.3.0 (most common) and ID3v2.4.0 (latest)
+ * All encodings supported (ISO 8859-1, UTF-16 with BOM, UTF-16BE, UTF-8)
 
 **Project State:** Alive
 
 ## Limitations
 
- * This tool only supports editing the most common tags: `TYER`, `TRCK`, `TPOS`, `TIT2`, `TALB`, `TPE1`, `TPE2` and `APIC`. Nevertheless it can remove/debug unknown tags properly.
- * Furthermore it only writes UTF-16 (LE) encoded text. Reading other encoded (ISO-8859-1, UTF-16 (LE/BE), UTF-8) text is supported anyway.
- * It can read ID3v2.3.0 as well as ID3v2.4.0. The tags id3edit writes are ID3v2.3.0 compatible and does not use v2.4.0 features.
- * It only supports setting JPEG images for album covers.
+ * It only supports JPEG images for album covers. (png support will be added in later versions)
+ * It does not care about any flags (usually no ID3 Tag or Frame flags are set) (some flags that may appear in the wild will be added in later versions)
 
 ## Name Definitions
 
@@ -44,6 +46,10 @@ This tool complete messed up all my tags because the promised Unicode support di
 That's why I needed a "ID3 Debugger" and this project was born.
 
 Lessons learned: Also backup huge data collection and test foreign tools properly before using it in scripts :)
+
+After separating id3edit from [MusicDB](https://github.com/rstemmer/musicdb) I reviewed the whole code and added some missing features.
+Further more I added ID3v2.4.0 support.
+So version 2.0.0 of id3edit was born.
 
 ## Examples
 
@@ -67,6 +73,7 @@ id3edit --set-name    "Example Song"         \\
         --set-album   "Example Album"        \\
         --set-artist  "Example Artist"       \\
         --set-artwork ~/pictures/example.jpg \\
+        --set-genre   "Example Genre"        \\
         --set-release 2018                   \\
         --set-track   "13/42"                \\
         --set-cd      "1/1"                  \\
@@ -172,22 +179,30 @@ sudo ./install.sh
 Shortcuts:
  
  * `id3show $FILE`: `id3edit --readonly --get-all $FILE`
- * `id3frames $FILE`: `id3edit --readonly --get-framelist $FILE`
+ * `id3frames $FILE`: `id3edit --readonly --get-frames $FILE`
  * `id3dump $FRAMEID $FILE`: `id3edit --readonly --dump $FRAMEID $FILE`
 
 ## Contribute
 
 In case you find a bug feel free to create an Issue.
 
-If you have a mp3 file with invalid meta data and you cannot debug it with `id3edit`, create an Issue and append the invalid file to it.
+If you have a mp3 file with invalid meta data and you cannot debug it with `id3edit`, create an Issue and append the invalid file to it (or at least the ID3 Tag).
 
 Pull requests are welcome as well.
 
 Bare mp3 files start with the magic number `0xFF, 0xFB`.
-Sometimes the second byte is different.
+Sometimes the second byte is different, because this magic number is not really magic, it already contains information about the encoding.
 In case you find a valid mp3 file and get the error `"ID: '???' (??????) not supported!` create an Issue and post the following output:
 
 ```bash
 id3edit --readonly --showheader invalid.mp3
 hexdump -C invalid.mp3 | head 
 ```
+
+In general posing the following information can be helpful to find a bug:
+
+```bash
+id3edit --readonly --showheader --get-all --get-frames bugtrigger.mp3
+hexdump -C bugtrigger.mp3 | head -n 50
+```
+
