@@ -1,3 +1,4 @@
+2.0.2  - Fixed a possible bug: For ID3v2.4.0 tags all text frames store NULL-terminated strings
 2.0.1  - Fixed a critical bug: The frame size en/decoding was not ID3v2.4.0 compatible
 2.0.0  - Lots of new features and fixes:
          +- Added --get-artwork to extract an artwork from a mp3 file

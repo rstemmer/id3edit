@@ -161,15 +161,15 @@ CheckResult "b094b92ff7873618aebcc819d8b36355"
 
 PrintTest "Set UTF-16BE encoded Text Frame"
 ./id3edit --encoding UTF-16BE --set-name "This is a test 😈" $DST
-CheckResult "24985f60193e2c8e9395d39dd4df48e3"
+CheckResult "2b7c1017135093c1ff5254892f168fe3"
 
 PrintTest "Set UTF-8 encoded Text Frame"
 ./id3edit --encoding UTF-8 --set-name "This is a test 😈" $DST
-CheckResult "bbc09094226d8b7229af13d3d5ff1933"
+CheckResult "f0828dbcabae5e872e9a288679983c30"
 
 PrintTest "Set ISO 8859-1 encoded Text Frame"
 ./id3edit --encoding ISO8859-1 --set-name "This is ä test" $DST
-CheckResult "bc742aadbef2587ced763374a838d3c5"
+CheckResult "ea6b1c47b63774e7249b523f038afcad"
 
 PrintTest "Set release year for ID3v2.3.0"
 CreateTestMP3
@@ -179,9 +179,9 @@ CheckResult "a2b6e5f4f3bbc04e3fb063d3d59eb7d2"
 
 PrintTest "Set release year for ID3v2.4.0"
 CreateTestMP3
-./id3edit --create --force240 --set-name "Release Test" --outfile $DST $SRC
+./id3edit --create --force240 --outfile $DST $SRC
 ./id3edit --set-release 2018 $DST
-CheckResult "f232bccc746f8cc5ea7b9756104835f5"
+CheckResult "1c46724c696900e093516b01574b0349"
 
 
 PrintHeader "Creating and editing artwork"

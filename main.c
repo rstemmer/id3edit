@@ -12,7 +12,7 @@
 #include <printhex.h>
 #include <stdbool.h>
 
-#define VERSION "2.0.1"
+#define VERSION "2.0.2"
 
 int CopyArgument(char **dst, char *src);
 int ProcessSetArgument(ID3V2 *id3v2, unsigned int ID, const char *argument, unsigned char encoding);
@@ -78,7 +78,7 @@ void PrintUsage()
     printf("\t\e[1;36m --strip       \e[1;34m Remove whole ID3 Tag \e[1;30m(leaves a bare audio file) \n");
     printf("\t\e[1;36m --showheader  \e[1;34m Print details of the headers while reading \n");
     printf("\t\e[1;36m --force230    \e[1;34m Force ID3 v 2.3.0 when writing \e[1;31m³\n");
-    printf("\t\e[1;36m --force240    \e[1;34m Force ID3 v 2.4.0 when writing \n");
+    printf("\t\e[1;36m --force240    \e[1;34m Force ID3 v 2.4.0 when writing \e[1;31m³\n");
     printf("\n");
 
     // Comments / footnotes
@@ -106,6 +106,7 @@ void PrintUsage()
     printf("\e[1;31m  ³ \e[1;33mIt is up to you to make sure all frames are conform to that version of the standard!\e[0m\n");
     printf("\e[1;30m    ID3v2.3.0 only allows UTF-16+BOM or ISO8859-1 encoded text.\e[0m\n");
     printf("\e[1;30m    Some frame IDs are different! (use --get-framelist to check the new file)\e[0m\n");
+    printf("\e[1;33m    There are many differences in the details of ID3v2.3.0 and ID3v2.4.0!\e[0m\n");
     printf("\n");
 
     // Some warnings

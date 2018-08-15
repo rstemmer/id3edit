@@ -54,7 +54,15 @@ int ID3V2_SetTextFrame(ID3V2 *id3v2, unsigned int ID, const char *utf8text, unsi
     void  *rawtext;
     size_t rawtextsize;
     size_t textbufferlimit = textlength * 4;       // 4 time the uft-8 encoded size is enough
+    unsigned char version  = id3v2->header.version_major;
 
+    // Track and update version number
+    if(encoding == ID3V2TEXTENCODING_UTF16_BE || encoding == ID3V2TEXTENCODING_UTF8)
+    {
+        version = 4;    // the used encoding is only allows in ID3v2.4.0
+    }
+
+    // Allocate memory for encoded text
     rawtext = malloc(textlength * 4);
     if(rawtext == NULL)
     {
@@ -63,8 +71,12 @@ int ID3V2_SetTextFrame(ID3V2 *id3v2, unsigned int ID, const char *utf8text, unsi
     }
 
     // Encode text
-    //  -1 to not encode '\0' because the ID3 standard does not need it in text frames.
-    error = Encode(encoding, utf8text, textlength - 1,  rawtext, textbufferlimit, &rawtextsize);
+    //  -1 to not encode '\0' because the ID3v2.3.0 standard does not need it in text frames.
+    if(version == 3)
+        error = Encode(encoding, utf8text, textlength - 1, rawtext, textbufferlimit, &rawtextsize);
+    else
+        error = Encode(encoding, utf8text, textlength    , rawtext, textbufferlimit, &rawtextsize);
+
     if(error)
     {
         free(rawtext);
@@ -94,13 +106,7 @@ int ID3V2_SetTextFrame(ID3V2 *id3v2, unsigned int ID, const char *utf8text, unsi
     }
 
     // Update ID3 version
-    if(encoding == ID3V2TEXTENCODING_UTF16_BE || encoding == ID3V2TEXTENCODING_UTF8)
-    {
-        if(id3v2->header.version_major == 3)
-        {
-            id3v2->header.version_major = 4;    // the used encoding is only allows in ID3v2.4.0
-        }
-    }
+    id3v2->header.version_major = version;    // the used encoding is only allows in ID3v2.4.0
 
     // done
     free(rawtext);
