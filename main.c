@@ -12,7 +12,7 @@
 #include <printhex.h>
 #include <stdbool.h>
 
-#define VERSION "2.0.2"
+#define VERSION "2.0.3"
 
 int CopyArgument(char **dst, char *src);
 int ProcessSetArgument(ID3V2 *id3v2, unsigned int ID, const char *argument, unsigned char encoding);
@@ -104,9 +104,10 @@ void PrintUsage()
     printf("\n");
 
     printf("\e[1;31m  ³ \e[1;33mIt is up to you to make sure all frames are conform to that version of the standard!\e[0m\n");
-    printf("\e[1;30m    ID3v2.3.0 only allows UTF-16+BOM or ISO8859-1 encoded text.\e[0m\n");
-    printf("\e[1;30m    Some frame IDs are different! (use --get-framelist to check the new file)\e[0m\n");
     printf("\e[1;33m    There are many differences in the details of ID3v2.3.0 and ID3v2.4.0!\e[0m\n");
+    printf("\e[1;34m    You better only use it in the following combination: \e[1;36m--clear --create --force240\e[1;34m.\e[0m\n");
+    printf("\e[1;30m    ID3v2.3.0 only allows UTF-16+BOM or ISO8859-1 encoded text.\e[0m\n");
+    printf("\e[1;30m    Some frame IDs are different! (use --get-frames to check the new file)\e[0m\n");
     printf("\n");
 
     // Some warnings
@@ -251,6 +252,10 @@ int main(int argc, char *argv[])
     // Process program arguments
     unsigned char encoding = ID3V2TEXTENCODING_UTF16_BOM; // default ID3v2.3.0 encoding
 
+    // Force ID3 version
+    if(force230) id3v2->header.version_major = 3; // ID3v2.3.0
+    if(force240) id3v2->header.version_major = 4; // ID3v2.4.0
+
     if(codename)     if(GetEncoding(codename, &encoding) != 0) goto exit;
     if(getframelist) if(ShowFramelist(id3v2)             != 0) goto exit;
     if(dumpframe)    if(DumpFrame(id3v2, dumpframe)      != 0) goto exit;
@@ -291,11 +296,11 @@ int main(int argc, char *argv[])
     if(ProcessSetArgument(id3v2, 'TPOS', newcdnr,    encoding) != 0) goto exit;
     if(ProcessSetArgument(id3v2, 'APIC', newartwork, encoding) != 0) goto exit;
     // Version depending tags
-    if(id3v2->header.version_major == 3 || force230)
+    if(id3v2->header.version_major == 3)
     {
         if(ProcessSetArgument(id3v2, 'TYER', newrelease, encoding) != 0) goto exit;
     }
-    else if(id3v2->header.version_major == 4 || force240)
+    else if(id3v2->header.version_major == 4)
     {
         if(ProcessSetArgument(id3v2, 'TDRC', newrelease, encoding) != 0) goto exit;
     }
@@ -306,10 +311,6 @@ int main(int argc, char *argv[])
         SafeFree(altpath);
         altpath = "/dev/null";  // if ID3V2_Close sees /dev/null, nothing will be stored
     }
-
-    // Force ID3 version
-    if(force230) id3v2->header.version_major = 3; // ID3v2.3.0
-    if(force240) id3v2->header.version_major = 4; // ID3v2.4.0
 
     error = ID3V2_Close(id3v2, altpath, striptag);
     if(error)

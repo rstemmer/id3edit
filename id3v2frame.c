@@ -56,10 +56,11 @@ int ID3V2_SetTextFrame(ID3V2 *id3v2, unsigned int ID, const char *utf8text, unsi
     size_t textbufferlimit = textlength * 4;       // 4 time the uft-8 encoded size is enough
     unsigned char version  = id3v2->header.version_major;
 
-    // Track and update version number
+    // Check version number
     if(encoding == ID3V2TEXTENCODING_UTF16_BE || encoding == ID3V2TEXTENCODING_UTF8)
     {
-        version = 4;    // the used encoding is only allows in ID3v2.4.0
+        if(version == 3)
+            return ID3V2ERROR_UNSUPPORTEDENCODING;
     }
 
     // Allocate memory for encoded text
@@ -104,9 +105,6 @@ int ID3V2_SetTextFrame(ID3V2 *id3v2, unsigned int ID, const char *utf8text, unsi
         free(framedata);
         return error;
     }
-
-    // Update ID3 version
-    id3v2->header.version_major = version;    // the used encoding is only allows in ID3v2.4.0
 
     // done
     free(rawtext);
@@ -268,6 +266,13 @@ int ID3V2_SetPictureFrame(ID3V2 *id3v2, unsigned char pictype,
 {
     int error;
 
+    // Check if encoding is supported
+    if(encoding == ID3V2TEXTENCODING_UTF16_BE || encoding == ID3V2TEXTENCODING_UTF8)
+    {
+        if(id3v2->header.version_major == 3)
+            return ID3V2ERROR_UNSUPPORTEDENCODING;
+    }
+
     // Encode description
     char   rawdescdata[ID3V2_MAXPICTUREDESCRIPTIONSIZE];
     size_t rawdescsize;
@@ -354,12 +359,6 @@ int ID3V2_SetPictureFrame(ID3V2 *id3v2, unsigned char pictype,
     {
         free(framedata);
         return error;
-    }
-
-    // Update ID3 version
-    if(encoding == ID3V2TEXTENCODING_UTF16_BE || encoding == ID3V2TEXTENCODING_UTF8)
-    {
-        id3v2->header.version_major = 4;    // the used encoding is only allows in ID3v2.4.0
     }
 
     // done

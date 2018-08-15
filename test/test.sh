@@ -155,32 +155,30 @@ PrintTest "Try replacing Text Frame with read-only flag"
 CheckResult "bff0a4da32a384cd333fcb9f02c051bd"
 
 PrintTest "Set UTF-16+BOM encoded Text Frame"
-./id3edit --create --set-name "This is a test 😈" --outfile $DST $SRC
-./id3edit --encoding UTF-16 --set-name "This is a test 😈" $DST
+./id3edit --create --force230 --encoding UTF-16 --set-name "This is a test 😈" --outfile $DST $SRC
 CheckResult "b094b92ff7873618aebcc819d8b36355"
 
 PrintTest "Set UTF-16BE encoded Text Frame"
-./id3edit --encoding UTF-16BE --set-name "This is a test 😈" $DST
+./id3edit --create --force240 --encoding UTF-16BE --set-name "This is a test 😈" $DST
 CheckResult "2b7c1017135093c1ff5254892f168fe3"
 
 PrintTest "Set UTF-8 encoded Text Frame"
-./id3edit --encoding UTF-8 --set-name "This is a test 😈" $DST
+./id3edit --create --force240 --encoding UTF-8 --set-name "This is a test 😈" $DST
 CheckResult "f0828dbcabae5e872e9a288679983c30"
 
 PrintTest "Set ISO 8859-1 encoded Text Frame"
-./id3edit --encoding ISO8859-1 --set-name "This is ä test" $DST
-CheckResult "ea6b1c47b63774e7249b523f038afcad"
+./id3edit --create --force230 --encoding ISO8859-1 --set-name "This is ä test" $DST
+CheckResult "9e70607b0f04673ccd6bdb300c69dea9"
 
 PrintTest "Set release year for ID3v2.3.0"
 CreateTestMP3
-./id3edit --create --force230 --set-name "Release Test" --outfile $DST $SRC
-./id3edit --set-release 2018 $DST
-CheckResult "a2b6e5f4f3bbc04e3fb063d3d59eb7d2"
+./id3edit --create --force230 --set-release 2018 --outfile $DST $SRC
+CheckResult "03b4980f51eec9d5f28f0007934c3f62"
 
 PrintTest "Set release year for ID3v2.4.0"
 CreateTestMP3
-./id3edit --create --force240 --outfile $DST $SRC
-./id3edit --set-release 2018 $DST
+./id3edit --create --force240 --set-release 2018 --outfile $DST $SRC
+#./id3edit --set-release 2018 $DST
 CheckResult "1c46724c696900e093516b01574b0349"
 
 
