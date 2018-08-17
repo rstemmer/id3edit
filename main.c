@@ -7,7 +7,7 @@
 #include <unistd.h>
 #include <id3v2.h>
 #include <id3v2frame.h>
-#include <encoding.h>
+#include <encoding/text.h>
 #include <rawfile.h>
 #include <printhex.h>
 #include <stdbool.h>

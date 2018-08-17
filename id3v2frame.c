@@ -4,7 +4,7 @@
 #include <string.h>
 #include <id3v2.h>
 #include <id3v2frame.h>
-#include <encoding.h>
+#include <encoding/text.h>
 
 #ifdef DEBUG
 #include <printhex.h>

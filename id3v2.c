@@ -5,49 +5,12 @@
 #include <string.h>
 #include <unistd.h>
 #include <id3v2.h>
-#include <endian.h>
 #include <stdbool.h>
+#include <encoding/text.h>
+#include <encoding/size.h>
+
 
 bool OPT_PrintHeader = false;
-
-unsigned int ID3V2_EncodeSize(unsigned int size)
-{
-    // 1.: 0000xxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    //  -> 0xxxxxxx0xxxxxxx0xxxxxxx0xxxxxxx
-    unsigned int byte = 0;
-    unsigned int tmp  = 0;
-    for(int i=0; i<4; i++)
-    {
-        byte  = size >> (i*7);
-        byte &= 0x7F;
-        tmp  |= byte << (i*8);
-    }
-
-    // 2.: LE -> BE
-    unsigned int encsize;
-    encsize = htobe32(tmp);
-
-    return encsize;
-}
-unsigned int ID3V2_DecodeSize(unsigned int encsize)
-{
-    // 1.: BE -> LE
-    unsigned int tmp;
-    tmp = be32toh(encsize);
-
-    // 2.: 0xxxxxxx0xxxxxxx0xxxxxxx0xxxxxxx
-    //  -> 0000xxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    unsigned int byte = 0;
-    unsigned int size = 0;
-    for(int i=0; i<4; i++)
-    {
-        byte  = tmp  >> (i*8);
-        byte &= 0x7F;
-        size |= byte << (i*7);
-    }
-
-    return size;
-}
 
 int ID3V2_Open(ID3V2 **id3v2, const char *path, bool createtag)
 {
@@ -149,15 +112,6 @@ int ID3V2_Open(ID3V2 **id3v2, const char *path, bool createtag)
         id3->rawmp3 = false; // there is a valid ID3 tag in the source file
     }
 
-    // Check flags
-    if(id3->header.flags != 0)
-    {
-        fprintf(stderr, "Unsupported flags detected. Set flags are: 0x%02X\n", id3->header.flags);
-        free(id3->path);
-        free(id3);
-        return ID3V2ERROR_NOTSUPPORTED;
-    }
-
     // Check version
     if((id3->header.version_major != 3 && id3->header.version_major != 4) || id3->header.version_minor != 0)
     {
@@ -169,34 +123,89 @@ int ID3V2_Open(ID3V2 **id3v2, const char *path, bool createtag)
         return ID3V2ERROR_NOTSUPPORTED;
     }
 
+    // Check flags
+    if(id3->header.flags != 0)
+    {
+#ifndef DEBUG
+        if(OPT_PrintHeader)
+#endif
+        {
+            printf("\e[1;37mFlags              Set Support\n");
+            printf("\e[1;34mUnsynchronisation  %s \e[1;34m[\e[1;31m✘\e[1;34m]\e[0m\n", 
+                    (id3->header.flags & ID3V2HEADERFLAG_UNSYNCHRONISATION)?
+                    "\e[1;34m[\e[1;36m✔\e[1;34m]":
+                    "\e[1;34m[\e[1;30m✘\e[1;34m]");
+            printf("\e[1;34mExtended Header    %s \e[1;34m[\e[1;33m✔\e[1;34m] \e[0;33m(partially)\e[0m\n",
+                    (id3->header.flags & ID3V2HEADERFLAG_EXTENDEDHEADER)?
+                    "\e[1;34m[\e[1;36m✔\e[1;34m]":
+                    "\e[1;34m[\e[1;30m✘\e[1;34m]");
+            printf("\e[1;34mExperimantal Tag   %s \e[1;34m[\e[1;33m✔\e[1;34m]\e[0m\n", 
+                    (id3->header.flags & ID3V2HEADERFLAG_EXPERIMENTAL)?
+                    "\e[1;34m[\e[1;36m✔\e[1;34m]":
+                    "\e[1;34m[\e[1;30m✘\e[1;34m]");
+            printf("\e[1;34mFooter available   %s \e[1;34m[\e[1;31m✘\e[1;34m] \e[1;30m(ID3v2.4.0 only)\e[0m\n", 
+                    (id3->header.flags & ID3V2HEADERFLAG_FOOTER)?
+                    "\e[1;34m[\e[1;36m✔\e[1;34m]":
+                    "\e[1;34m[\e[1;30m✘\e[1;34m]");
+        }
+
+        // Some flags are not supported. Exit id3edit when they are set.
+        if(id3->header.flags & (ID3V2HEADERFLAG_UNSYNCHRONISATION | ID3V2HEADERFLAG_FOOTER))
+        {
+            fprintf(stderr, "Unsupported flags detected. Set flags are: 0x%02X\n", id3->header.flags);
+            free(id3->path);
+            free(id3);
+            return ID3V2ERROR_NOTSUPPORTED;
+        }
+    }
+
     // read extended header if available
     if(id3->header.flags & ID3V2HEADERFLAG_EXTENDEDHEADER)
     {
-        fprintf(stderr, "Extended header are not supported yet!\n");
-        free(id3->path);
-        free(id3);
-        return ID3V2ERROR_NOTSUPPORTED;
-        // TODO
-        /*
-        fread(&bigendian, 4, 1, id3->file); id3->extheader.size        = be32toh(bigendian);
-        fread(&bigendian, 2, 1, id3->file); id3->extheader.flags       = be16toh(bigendian);
-        fread(&bigendian, 4, 1, id3->file); id3->extheader.paddingsize = be32toh(bigendian);
+        int error;
+        if(id3->header.version_major == 4) // ID3v2.4.0 uses a different structure
+            error = ID3V240_ParseExtendedHeader(id3);
+        else
+            error = ID3V230_ParseExtendedHeader(id3);
+
+        if(error)
+        {
+            free(id3->path);
+            free(id3);
+            return error;
+        }
 #ifndef DEBUG
         if(OPT_PrintHeader)
 #endif
         {
             printf("\e[1;37mExtended Header\n");
-            printf("\e[1;34mSize:         \033[0;36m%i\n",     id3->extheader.size);
-            printf("\e[1;34mFlags:        \033[0;36m0x%04X\n", id3->extheader.flags);
-            printf("\e[1;34mPadding Size: \033[0;36m%i\n",     id3->extheader.paddingsize);
+            printf("\e[1;34mSize:         \033[0;36m%i\n", id3->extheader.size);
+            printf("\e[1;34mPadding Size: \033[0;36m%i\n", id3->extheader.paddingsize);
+            printf("\e[1;37mExtended Flags   Set Support\n");
+            printf("\e[1;34mUpdated          %s \e[1;34m[\e[1;31m✘\e[1;34m] \e[0;33m(Will be ignored)\e[0m\n", 
+                    (id3->extheader.flag_update)?
+                    "\e[1;34m[\e[1;36m✔\e[1;34m]":
+                    "\e[1;34m[\e[1;30m✘\e[1;34m]");
+            printf("\e[1;34mCRC              %s \e[1;34m[\e[1;31m✘\e[1;34m] \e[0;33m(Will be ignored)\e[0m\n",
+                    (id3->extheader.flag_crc)?
+                    "\e[1;34m[\e[1;36m✔\e[1;34m]":
+                    "\e[1;34m[\e[1;30m✘\e[1;34m]");
+            printf("\e[1;34mRestricted       %s \e[1;34m[\e[1;31m✘\e[1;34m] \e[0;33m(Will be ignored)\e[0m\n", 
+                    (id3->extheader.flag_restricted)?
+                    "\e[1;34m[\e[1;36m✔\e[1;34m]":
+                    "\e[1;34m[\e[1;30m✘\e[1;34m]");
         }
-        */
     }
     else
     {
-        id3->extheader.size        = 0;
-        id3->extheader.flags       = 0;
-        id3->extheader.paddingsize = 0;
+        // Reset all values
+        id3->extheader.size            = 0;
+        id3->extheader.paddingsize     = 0;
+        id3->extheader.flag_update     = false;
+        id3->extheader.flag_crc        = false;
+        id3->extheader.flag_restricted = false;
+        id3->extheader.crc             = 0x00;
+        id3->extheader.restrictions    = 0x00;
     } 
 
     // read all frames
