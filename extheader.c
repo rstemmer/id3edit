@@ -6,6 +6,7 @@
 #include <endian.h>
 #include <stdbool.h>
 #include <encoding/size.h>
+#include <encoding/crc.h>
 #include <id3v2.h>
 
 
@@ -62,7 +63,7 @@ int ID3V240_ReadExtendedHeader(ID3V2 *id3)
         }
         unsigned char enccrc[5]; // encoded CRC: 7bit/byte
         fread(enccrc, 1, 5, id3->file);
-        // TODO: decode CRC value
+        ID3V2_DecodeCRC(&id3->extheader.crc, enccrc);
     }
     else
     {

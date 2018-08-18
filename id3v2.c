@@ -186,10 +186,12 @@ int ID3V2_Open(ID3V2 **id3v2, const char *path, bool createtag)
                     (id3->extheader.flag_update)?
                     "\e[1;34m[\e[1;36m✔\e[1;34m]":
                     "\e[1;34m[\e[1;30m✘\e[1;34m]");
-            printf("\e[1;34mCRC              %s \e[1;34m[\e[1;31m✘\e[1;34m] \e[0;33m(Will be ignored)\e[0m\n",
+            printf("\e[1;34mCRC              %s \e[1;34m[\e[1;31m✘\e[1;34m] \e[0;33m(Will be ignored) "
+                                               "\e[1;34mCRC: \e[0;36m0x%04lX\e[0m\n",
                     (id3->extheader.flag_crc)?
                     "\e[1;34m[\e[1;36m✔\e[1;34m]":
-                    "\e[1;34m[\e[1;30m✘\e[1;34m]");
+                    "\e[1;34m[\e[1;30m✘\e[1;34m]",
+                    id3->extheader.crc);
             printf("\e[1;34mRestricted       %s \e[1;34m[\e[1;31m✘\e[1;34m] \e[0;33m(Will be ignored)\e[0m\n", 
                     (id3->extheader.flag_restricted)?
                     "\e[1;34m[\e[1;36m✔\e[1;34m]":
@@ -386,6 +388,8 @@ int ID3V2_Close(ID3V2 *id3v2, const char *altpath, bool removetag)
     printf("\e[1;34mReadonly: \e[1;36m%s\n", readonly?"true":"false");
     printf("\e[1;34mAltpath:  \e[1;36m%s\n", altpath?altpath:"\e[0;36mNULL");
 #endif
+
+    // FIXME: CRITICAL!!! When dropping ext header, decrease tag size by ext header size!!
 
     // Store header
     if(!readonly && !removetag)
