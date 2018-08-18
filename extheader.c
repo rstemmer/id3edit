@@ -9,7 +9,7 @@
 #include <id3v2.h>
 
 
-int ID3V240_ParseExtendedHeader(ID3V2 *id3)
+int ID3V240_ReadExtendedHeader(ID3V2 *id3)
 {
     unsigned int bigendian;
 
@@ -55,7 +55,7 @@ int ID3V240_ParseExtendedHeader(ID3V2 *id3)
         id3->extheader.flag_crc = true;
 
         fread(&flagdatasize, 1, 1, id3->file); // This byte is always 5
-        if(flagdatasize != 0)
+        if(flagdatasize != 5)
         {
             fprintf(stderr, "Attached data for CRC-Flag is not 5 as specified! (actually %i)\n", flagdatasize);
             return ID3V2ERROR_NOTSUPPORTED;
@@ -76,7 +76,7 @@ int ID3V240_ParseExtendedHeader(ID3V2 *id3)
         id3->extheader.flag_restricted = true;
 
         fread(&flagdatasize, 1, 1, id3->file); // This byte is always 1
-        if(flagdatasize != 0)
+        if(flagdatasize != 1)
         {
             fprintf(stderr, "Attached data for CRC-Flag is not 1 as specified! (actually %i)\n", flagdatasize);
             return ID3V2ERROR_NOTSUPPORTED;
@@ -96,7 +96,7 @@ int ID3V240_ParseExtendedHeader(ID3V2 *id3)
 
 
 
-int ID3V230_ParseExtendedHeader(ID3V2 *id3)
+int ID3V230_ReadExtendedHeader(ID3V2 *id3)
 {
     unsigned int   bigendian;
     unsigned short flags;

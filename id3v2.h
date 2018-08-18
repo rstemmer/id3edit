@@ -96,8 +96,8 @@ extern bool OPT_PrintHeader;    // print header detail while reading the ID3 tag
 //////////////////////////////////////////////////////////////////////////////
 // Extended Header parser
 // !! Make sure id3->file points to the begin of the extended header
-int ID3V230_ParseExtendedHeader(ID3V2 *id3);
-int ID3V240_ParseExtendedHeader(ID3V2 *id3);
+int ID3V230_ReadExtendedHeader(ID3V2 *id3);
+int ID3V240_ReadExtendedHeader(ID3V2 *id3);
 
 //////////////////////////////////////////////////////////////////////////////
 

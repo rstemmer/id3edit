@@ -139,7 +139,7 @@ int ID3V2_Open(ID3V2 **id3v2, const char *path, bool createtag)
                     (id3->header.flags & ID3V2HEADERFLAG_EXTENDEDHEADER)?
                     "\e[1;34m[\e[1;36m✔\e[1;34m]":
                     "\e[1;34m[\e[1;30m✘\e[1;34m]");
-            printf("\e[1;34mExperimantal Tag   %s \e[1;34m[\e[1;33m✔\e[1;34m]\e[0m\n", 
+            printf("\e[1;34mExperimantal Tag   %s \e[1;34m[\e[1;32m✔\e[1;34m]\e[0m\n", 
                     (id3->header.flags & ID3V2HEADERFLAG_EXPERIMENTAL)?
                     "\e[1;34m[\e[1;36m✔\e[1;34m]":
                     "\e[1;34m[\e[1;30m✘\e[1;34m]");
@@ -164,9 +164,9 @@ int ID3V2_Open(ID3V2 **id3v2, const char *path, bool createtag)
     {
         int error;
         if(id3->header.version_major == 4) // ID3v2.4.0 uses a different structure
-            error = ID3V240_ParseExtendedHeader(id3);
+            error = ID3V240_ReadExtendedHeader(id3);
         else
-            error = ID3V230_ParseExtendedHeader(id3);
+            error = ID3V230_ReadExtendedHeader(id3);
 
         if(error)
         {
@@ -211,7 +211,8 @@ int ID3V2_Open(ID3V2 **id3v2, const char *path, bool createtag)
     // read all frames
     id3->framelist      = NULL;
     ID3V2_FRAME  **next = &id3->framelist;
-    unsigned int offset = 0;
+    unsigned int offset =  id3->extheader.size; // The frames start behind the extended header
+
     while(offset < id3->header.origsize)
     {
         ID3V2_FRAME *frame;
