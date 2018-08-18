@@ -54,6 +54,7 @@ typedef struct
     bool flag_restricted;
 
     unsigned long crc;
+    unsigned long realcrc;
     unsigned char restrictions;
 } ID3V2_EXTHEADER;
 

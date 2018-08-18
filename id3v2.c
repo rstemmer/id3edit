@@ -8,6 +8,7 @@
 #include <stdbool.h>
 #include <encoding/text.h>
 #include <encoding/size.h>
+#include <crc32.h>
 
 
 bool OPT_PrintHeader = false;
@@ -186,7 +187,7 @@ int ID3V2_Open(ID3V2 **id3v2, const char *path, bool createtag)
                     (id3->extheader.flag_update)?
                     "\e[1;34m[\e[1;36m✔\e[1;34m]":
                     "\e[1;34m[\e[1;30m✘\e[1;34m]");
-            printf("\e[1;34mCRC              %s \e[1;34m[\e[1;31m✘\e[1;34m] \e[0;33m(Will be ignored) "
+            printf("\e[1;34mCRC              %s \e[1;34m[\e[1;33m✔\e[1;34m] \e[0;33m(Read Only) "
                                                "\e[1;34mCRC: \e[0;36m0x%04lX\e[0m\n",
                     (id3->extheader.flag_crc)?
                     "\e[1;34m[\e[1;36m✔\e[1;34m]":
@@ -335,6 +336,28 @@ int ID3V2_Open(ID3V2 **id3v2, const char *path, bool createtag)
         fprintf(stderr, "\tInvalid ID: 0x%4X\n", magicword&0x0FFFF);
         fprintf(stderr, "\tAt file pos. %li\n", ftell(id3->file));
         fprintf(stderr, "\tI\'ll do nothing - nothing will become worse.\n");
+    }
+
+    // Calculate and compare CRC32 check sum if the corresponding flag is set in the header
+    long endofdata;
+    long startofdata;
+    startofdata = 10+id3->extheader.size;   // The data to consider start after the extended header
+    endofdata   = 10+id3->header.origsize;  // 10: Size of tag header
+
+    int error;
+    error = CRC32FromFile(id3->file, startofdata, endofdata, &id3->extheader.realcrc);
+    if(error == 0 && id3->extheader.flag_crc)
+    {
+#ifndef DEBUG
+        if(OPT_PrintHeader)
+#endif
+        {
+            printf("\e[1;37mCRC Check:\n");
+            printf("\e[1;34mStored:     \e[1;36m0x%08lX\n", id3->extheader.crc);
+            printf("\e[1;34mCalculated: %s0x%08lX\e[0m\n", 
+                    (id3->extheader.crc == id3->extheader.realcrc)?"\e[1;32m":"\e[1;31m",
+                    id3->extheader.realcrc);
+        }
     }
 
     return ID3V2ERROR_NOERROR;

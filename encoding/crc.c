@@ -10,7 +10,8 @@ void ID3V2_EncodeCRC(unsigned long  crc,       unsigned char enccrc[5])
 
     // 1.: LE -> BE
     unsigned long becrc;
-    becrc = htobe32(crc);
+    //becrc = htobe32(crc);
+    becrc = crc;
 
     // 1.: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     //  -> 0000xxxx0xxxxxxx0xxxxxxx0xxxxxxx0xxxxxxx
@@ -41,9 +42,7 @@ void ID3V2_DecodeCRC(unsigned long *crc, const unsigned char enccrc[5])
         tmp  |= byte << ((4-i)*7);
     }
 
-    // 2.: BE -> LE
-    *crc = be32toh(tmp);
-
+    *crc = tmp;
     return;
 }
 

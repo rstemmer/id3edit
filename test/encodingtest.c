@@ -63,8 +63,8 @@ int main(int argc, char *argv[])
     PrintTest("Decode unsynchronized CRC");
     {
     unsigned char enccrc[5] = {0x0F, 0x7F, 0x3C, 0x5A, 0x7F};
-    unsigned int  deccrc;
-    unsigned int  expectedcrc = 0x7F2DEFFF;
+    unsigned long deccrc;
+    unsigned long expectedcrc = 0xFFEF2D7F;
     // 00001111 01111111 00111100 01011010 01111111
     // 11111111 11101111 00101101 01111111 _BE
     ID3V2_DecodeCRC(&deccrc, enccrc);
@@ -75,7 +75,7 @@ int main(int argc, char *argv[])
     {
     unsigned char expectedcrc[5] = {0x0F, 0x7F, 0x3C, 0x5A, 0x7F};
     unsigned char enccrc[5];
-    unsigned int  crc = 0x7F2DEFFF;
+    unsigned long crc = 0xFFEF2D7F;
     ID3V2_EncodeCRC(crc, enccrc);
     CheckEncoderResult(&enccrc, &expectedcrc, 5, 5);
     }
