@@ -101,28 +101,28 @@ CheckResult "3064cf73aa8541e96201f8fab55293b2"
 PrintTest "Create new ID3 Tag for new file"
 CreateTestMP3
 ./id3edit --create --outfile $DST $SRC
-CheckResult "22d57cc617b98a5a9ec0fd4c710d1bb3"
+CheckResult "2db1325baddc98e921587e07a724e0d8"
 
 PrintTest "Create new ID3 Tag and overwrite source"
 CreateTestMP3
 ./id3edit --create $SRC
 cp "$SRC" "$DST"
-CheckResult "22d57cc617b98a5a9ec0fd4c710d1bb3"
+CheckResult "2db1325baddc98e921587e07a724e0d8"
 
 PrintTest "Create a clean ID3 Tag"
 CreateTestMP3
 ./id3edit --create --clear $SRC
 cp "$SRC" "$DST"
-CheckResult "22d57cc617b98a5a9ec0fd4c710d1bb3"
+CheckResult "2db1325baddc98e921587e07a724e0d8"
 
 PrintTest "Force ID3v2.4.0"
 CreateTestMP3
 ./id3edit --create --force240 --outfile $DST $SRC
-CheckResult "ca1c6b39cd46f9d8077a2d91c5343fac"
+CheckResult "6f3816cf5708aea2f6f0e5cff1b3403e"
 
 PrintTest "Force ID3v2.3.0"
 ./id3edit --create --force230 --outfile $DST $SRC
-CheckResult "22d57cc617b98a5a9ec0fd4c710d1bb3"
+CheckResult "2db1325baddc98e921587e07a724e0d8"
 
 PrintTest "Remove ID3v2 Tag"
 ./id3edit --strip $DST
@@ -135,51 +135,50 @@ CreateTestMP3
 
 PrintTest "Create new ID3 Tag and set a Text Frame (with Unicode)"
 ./id3edit --create --set-name "This is a test 😈" --outfile $DST $SRC
-CheckResult "b094b92ff7873618aebcc819d8b36355"
+CheckResult "8d4d5c79f926c6fdd7ed045738861035"
 
 PrintTest "Replace Text Frame with shorter text"
 ./id3edit --set-name "Test" $DST
-CheckResult "bff0a4da32a384cd333fcb9f02c051bd"
+CheckResult "2754887be18efe5ff5e668806ce0b0d6"
 
 PrintTest "Replace Text Frame with longer text"
 ./id3edit --set-name "A very very long text with lots of characters" $DST
-CheckResult "6edf30aaad00fa088c25960467ca4f1b"
+CheckResult "a781e6ad1d326cb2a453063d678dfbfc"
 
 PrintTest "Remove all Frames from ID3 Tag"
 ./id3edit --clear $DST
-CheckResult "22d57cc617b98a5a9ec0fd4c710d1bb3"
+CheckResult "2db1325baddc98e921587e07a724e0d8"
 
 PrintTest "Try replacing Text Frame with read-only flag"
 ./id3edit --set-name "Test" $DST
 ./id3edit --readonly --set-name "This is a test 😈" $DST
-CheckResult "bff0a4da32a384cd333fcb9f02c051bd"
+CheckResult "2754887be18efe5ff5e668806ce0b0d6"
 
 PrintTest "Set UTF-16+BOM encoded Text Frame"
 ./id3edit --create --force230 --encoding UTF-16 --set-name "This is a test 😈" --outfile $DST $SRC
-CheckResult "b094b92ff7873618aebcc819d8b36355"
+CheckResult "8d4d5c79f926c6fdd7ed045738861035"
 
 PrintTest "Set UTF-16BE encoded Text Frame"
 ./id3edit --create --force240 --encoding UTF-16BE --set-name "This is a test 😈" $DST
-CheckResult "2b7c1017135093c1ff5254892f168fe3"
+CheckResult "ae0487260f5b150c468a0a9ea904f9bd"
 
 PrintTest "Set UTF-8 encoded Text Frame"
 ./id3edit --create --force240 --encoding UTF-8 --set-name "This is a test 😈" $DST
-CheckResult "f0828dbcabae5e872e9a288679983c30"
+CheckResult "99573302df02f4330546d30b20bff93a"
 
 PrintTest "Set ISO 8859-1 encoded Text Frame"
 ./id3edit --create --force230 --encoding ISO8859-1 --set-name "This is ä test" $DST
-CheckResult "9e70607b0f04673ccd6bdb300c69dea9"
+CheckResult "362ef00025ee5d1475bd87fd4aab4e1f"
 
 PrintTest "Set release year for ID3v2.3.0"
 CreateTestMP3
 ./id3edit --create --force230 --set-release 2018 --outfile $DST $SRC
-CheckResult "03b4980f51eec9d5f28f0007934c3f62"
+CheckResult "0855d28dbb241084557dbe6a23072ac8"
 
 PrintTest "Set release year for ID3v2.4.0"
 CreateTestMP3
 ./id3edit --create --force240 --set-release 2018 --outfile $DST $SRC
-#./id3edit --set-release 2018 $DST
-CheckResult "1c46724c696900e093516b01574b0349"
+CheckResult "9df4c22b8b82db833ff7ce99b148c86c"
 
 
 PrintHeader "Creating and editing artwork"
@@ -190,7 +189,7 @@ CreateTestPNG
 
 PrintTest "Add jpeg artwork for ID3v2.3.0"
 ./id3edit --set-artwork $SRCAW --outfile $DST $SRC
-CheckResult "dba22cda9ec6a901a349403a800e3eb2"
+CheckResult "c2096703406b3e1b179dfe98a6ad3f6c"
 
 PrintTest "Get jpeg artwork"
 ./id3edit --get-artwork $DSTAW $DST
@@ -200,11 +199,11 @@ CheckValues $SRCSUM $DSTSUM
 
 PrintTest "Add jpeg artwork for ID3v2.4.0"
 ./id3edit --force240 --set-artwork $SRCAW --outfile $DST $SRC
-CheckResult "2d59c0d57dfd7c12e43c5e9d03f36fca"
+CheckResult "8bed0327bfa6eb5eae80ed9d1e10b6c0"
 
 PrintTest "Add png artwork for ID3v2.3.0"
 ./id3edit --set-artwork $SRCPNGAW --outfile $DST $SRC
-CheckResult "3cbcd065ef0bf995fa175dc88a90e168"
+CheckResult "832fcc2a6d9a55394fb27b0a72266c34"
 
 PrintTest "Get png artwork"
 ./id3edit --get-artwork $DSTPNGAW $DST
@@ -219,19 +218,19 @@ CreateTestMP3
 
 PrintTest "Add extended header with CRC for ID3v2.4.0"
 ./id3edit --create --clear --force240 --add-crc --encoding utf-8 --set-name "This is a test 😈" --outfile $DST $SRC
-CheckResult "39b03484b15de1d8d65b322ad9687495"
+CheckResult "fa2ddd6d345694d0a238d00f98216fb7"
 
 PrintTest "Remove extended header for ID3v2.4.0"
 ./id3edit --rm-exthdr $DST
-CheckResult "f0828dbcabae5e872e9a288679983c30"
+CheckResult "99573302df02f4330546d30b20bff93a"
 
 PrintTest "Add extended header with CRC for ID3v2.3.0"
 ./id3edit --create --clear --force230 --add-crc --set-name "This is a test 😈" --outfile $DST $SRC
-CheckResult "12f94b01880693dd674a1cdfd8190131"
+CheckResult "c2d85c317db361f41766e059a323b791"
 
 PrintTest "Remove extended header for ID3v2.3.0"
 ./id3edit --rm-exthdr $DST
-CheckResult "b094b92ff7873618aebcc819d8b36355"
+CheckResult "8d4d5c79f926c6fdd7ed045738861035"
 
 
 echo -e "\n\e[1;37mRemoving tests …\e[0m"
