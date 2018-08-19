@@ -80,6 +80,7 @@ void PrintUsage()
     printf("\t\e[1;36m --force230    \e[1;34m Force ID3 v 2.3.0 when writing \e[1;31m³\n");
     printf("\t\e[1;36m --force240    \e[1;34m Force ID3 v 2.4.0 when writing \e[1;31m³\n");
     printf("\t\e[1;36m --add-crc     \e[1;34m Add extended header with CRC32 check sum \e[1;31m⁴\n");
+    printf("\t\e[1;36m --rm-exthdr   \e[1;34m Remove extended header \e[1;31m⁴\n");
     printf("\n");
 
     // Comments / footnotes
@@ -172,6 +173,7 @@ int main(int argc, char *argv[])
     bool force230   = false;
     bool force240   = false;
     bool addcrc     = false;
+    bool rmexthdr   = false;
     bool getframelist=false;
     bool getname    = false;
     bool getalbum   = false;
@@ -196,6 +198,7 @@ int main(int argc, char *argv[])
         GETFLAG(force230,     "--force230")
         GETFLAG(force240,     "--force240")
         GETFLAG(addcrc,       "--add-crc")
+        GETFLAG(rmexthdr,     "--rm-exthdr")
         GETFLAG(OPT_PrintHeader, "--showheader")    // Global flag for the id3v2.c code
         GETFLAG(getframelist, "--get-frames")       // \_ Allow both options to show a list of frames
         GETFLAG(getframelist, "--get-framelist")    // /
@@ -312,12 +315,8 @@ int main(int argc, char *argv[])
     }
 
     // Extended Header Features
-    if(addcrc)
-    {
-        error = ID3V2_UpdateExtendedHeader(id3v2, /*updated*/false, addcrc, /*restricted*/0x00);
-        if(error)
-            goto exit;
-    }
+    if(rmexthdr) if(ID3V2_RemoveExtendedHeader(id3v2)                                               != 0) goto exit;
+    if(addcrc)   if(ID3V2_UpdateExtendedHeader(id3v2, /*updated*/false, addcrc, /*restricted*/0x00) != 0) goto exit;
 
     // CLOSE
     if(readonly)

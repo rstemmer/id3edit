@@ -371,16 +371,18 @@ int ID3V2_Open(ID3V2 **id3v2, const char *path, bool createtag)
     if(OPT_PrintHeader)
 #endif
     {
-        int error = 0;
         if(id3->extheader.flag_crc)
-            error = CRC32FromFile(id3->file, startofdata, endofdata, &id3->extheader.realcrc);
-        if(error == 0 )
         {
-            printf("\e[1;37mCRC Check:\n");
-            printf("\e[1;34mStored:     \e[1;36m0x%08lX\n", id3->extheader.crc);
-            printf("\e[1;34mCalculated: %s0x%08lX\e[0m\n", 
-                    (id3->extheader.crc == id3->extheader.realcrc)?"\e[1;32m":"\e[1;31m",
-                    id3->extheader.realcrc);
+            int error = 0;
+            error = CRC32FromFile(id3->file, startofdata, endofdata, &id3->extheader.realcrc);
+            if(error == 0)
+            {
+                printf("\e[1;37mCRC Check:\n");
+                printf("\e[1;34m\tStored:     \e[1;36m0x%08lX\n", id3->extheader.crc);
+                printf("\e[1;34m\tCalculated: %s0x%08lX\e[0m\n", 
+                        (id3->extheader.crc == id3->extheader.realcrc)?"\e[1;32m":"\e[1;31m",
+                        id3->extheader.realcrc);
+            }
         }
     }
 

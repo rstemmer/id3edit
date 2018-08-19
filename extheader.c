@@ -67,6 +67,37 @@ int ID3V2_UpdateExtendedHeader(ID3V2 *id3, bool update, bool crc, unsigned char 
 
 //////////////////////////////////////////////////////////////////////////////
 
+int ID3V2_RemoveExtendedHeader(ID3V2 *id3)
+{
+    // Check if extended header actually exists
+    if(id3->extheader.size == 0)
+        return ID3V2ERROR_NOERROR;
+
+    // Update Tag size
+    unsigned char version = id3->header.version_major;
+    if(version == 4)
+        id3->header.realsize -= id3->extheader.size;
+    else
+        id3->header.realsize -= (id3->extheader.size + 4); // In ID3v2.3.0 size variable does not count itself
+
+    // Make extheader structure harmless
+    id3->extheader.size            = 0;
+    id3->extheader.paddingsize     = 0;
+    id3->extheader.flag_update     = false;
+    id3->extheader.flag_crc        = false;
+    id3->extheader.flag_restricted = false;
+    id3->extheader.crc             = 0x00000000;
+    id3->extheader.realcrc         = 0x00000000;
+    id3->extheader.restrictions    = 0x00;
+
+    // Remove Ext. Header flag
+    id3->header.flags &= ~ID3V2HEADERFLAG_EXTENDEDHEADER;
+
+    return ID3V2ERROR_NOERROR;
+}
+
+//////////////////////////////////////////////////////////////////////////////
+
 int ID3V240_ReadExtendedHeader(ID3V2 *id3)
 {
     unsigned int bigendian;
