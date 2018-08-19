@@ -185,7 +185,7 @@ int ID3V2_Open(ID3V2 **id3v2, const char *path, bool createtag)
             printf("\e[1;34mSize:         \033[0;36m%i\n", id3->extheader.size);
             printf("\e[1;34mPadding Size: \033[0;36m%i\n", id3->extheader.paddingsize);
             printf("\e[1;37mExtended Flags   Set Support\n");
-            printf("\e[1;34mUpdated          %s \e[1;34m[\e[1;31m✘\e[1;34m] \e[0;33m(Will be ignored)\e[0m\n", 
+            printf("\e[1;34mUpdated          %s \e[1;34m[\e[1;33m✔\e[1;34m] \e[0;33m(Doesn\'t make sense in files. Will be ignored)\e[0m\n",
                     (id3->extheader.flag_update)?
                     "\e[1;34m[\e[1;36m✔\e[1;34m]":
                     "\e[1;34m[\e[1;30m✘\e[1;34m]");
