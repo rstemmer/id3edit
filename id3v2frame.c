@@ -67,6 +67,7 @@ int ID3V2_SetTextFrame(ID3V2 *id3v2, unsigned int ID, const char *utf8text, unsi
     rawtext = malloc(textlength * 4);
     if(rawtext == NULL)
     {
+        fprintf(stderr, "%s, %i: ", __FILE__, __LINE__);
         fprintf(stderr, "Fatal Error! - malloc returned NULL!\n");
         return ID3V2ERROR_FATAL;
     }
@@ -89,6 +90,7 @@ int ID3V2_SetTextFrame(ID3V2 *id3v2, unsigned int ID, const char *utf8text, unsi
     unsigned char *framedata = malloc(framesize);
     if(framedata == NULL)
     {
+        fprintf(stderr, "%s, %i: ", __FILE__, __LINE__);
         fprintf(stderr, "Fatal Error! - malloc returned NULL!\n");
         free(rawtext);
         return ID3V2ERROR_FATAL;
@@ -137,6 +139,7 @@ int ID3V2_GetPictureFrame(const ID3V2 *id3v2, unsigned char pictype,
     char  *mime     = malloc(sizeof(char) * (mimesize + 1)); // +'\0'
     if(mime == NULL)
     {
+        fprintf(stderr, "%s, %i: ", __FILE__, __LINE__);
         fprintf(stderr, "Fatal Error! - malloc returned NULL!\n");
         return ID3V2ERROR_FATAL;
     }
@@ -159,6 +162,7 @@ int ID3V2_GetPictureFrame(const ID3V2 *id3v2, unsigned char pictype,
     if(desctext == NULL)
     {
         free(mime);
+        fprintf(stderr, "%s, %i: ", __FILE__, __LINE__);
         fprintf(stderr, "Fatal Error! - malloc returned NULL!\n");
         return ID3V2ERROR_FATAL;
     }
@@ -230,6 +234,7 @@ int ID3V2_GetPictureFrame(const ID3V2 *id3v2, unsigned char pictype,
     {
         free(mime);
         free(desctext);
+        fprintf(stderr, "%s, %i: ", __FILE__, __LINE__);
         fprintf(stderr, "Fatal Error! - malloc returned NULL!\n");
         return ID3V2ERROR_FATAL;
     }
@@ -329,6 +334,7 @@ int ID3V2_SetPictureFrame(ID3V2 *id3v2, unsigned char pictype,
     framedata = malloc(framesize);
     if(framedata == NULL)
     {
+        fprintf(stderr, "%s, %i: ", __FILE__, __LINE__);
         fprintf(stderr, "Fatal Error! - malloc returned NULL!\n");
         return ID3V2ERROR_FATAL;
     }

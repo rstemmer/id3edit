@@ -7,6 +7,12 @@
 
 int CRC32FromFile(FILE *file, long from, long to, unsigned long *crc)
 {
+    if(from >= to)
+    {
+        fprintf(stderr, "Invalid span of data for CRC: from = %li; to = %li!\n", from, to);
+        return -1;
+    }
+
     // Create Buffer
     unsigned char  *buffer;
     size_t buffersize = to-from;
@@ -14,6 +20,7 @@ int CRC32FromFile(FILE *file, long from, long to, unsigned long *crc)
     buffer = malloc(buffersize * sizeof(char));
     if(buffer == NULL)
     {
+        fprintf(stderr, "%s, %i: ", __FILE__, __LINE__);
         fprintf(stderr, "Fatal Error! - malloc returned NULL!\n");
         return -1;
     }
@@ -23,6 +30,7 @@ int CRC32FromFile(FILE *file, long from, long to, unsigned long *crc)
     error = fseek(file, from, SEEK_SET);
     if(error != 0)
     {
+        fprintf(stderr, "%s, %i: ", __FILE__, __LINE__);
         fprintf(stderr, "Fatal Error! - Setting correct file position failed!\n");
         return -1;
     }
@@ -32,6 +40,7 @@ int CRC32FromFile(FILE *file, long from, long to, unsigned long *crc)
     bytesread = fread(buffer, 1, buffersize, file);
     if(bytesread != buffersize)
     {
+        fprintf(stderr, "%s, %i: ", __FILE__, __LINE__);
         fprintf(stderr, "Fatal Error! - Only %zu of %zu bytes read from file!\n", bytesread, buffersize);
         return -1;
     }

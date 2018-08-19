@@ -46,8 +46,8 @@ typedef struct
 
 typedef struct
 {
-    unsigned int size;
-    unsigned int paddingsize;
+    unsigned int size;          // keep in mind to update when changing the ext. header
+    unsigned int paddingsize;   // ID3v2.3.0 only
 
     bool flag_update;
     bool flag_crc;
@@ -97,8 +97,13 @@ extern bool OPT_PrintHeader;    // print header detail while reading the ID3 tag
 //////////////////////////////////////////////////////////////////////////////
 // Extended Header parser
 // !! Make sure id3->file points to the begin of the extended header
+int ID3V2_UpdateExtendedHeader(ID3V2 *id3, bool update, bool crc, unsigned char restrictions); // Update structure
 int ID3V230_ReadExtendedHeader(ID3V2 *id3);
 int ID3V240_ReadExtendedHeader(ID3V2 *id3);
+int ID3V230_WriteExtendedHeader(const ID3V2 *id3, FILE *file);
+int ID3V240_WriteExtendedHeader(const ID3V2 *id3, FILE *file);
+int ID3V230_UpdateCRC(const ID3V2 *id3, FILE *file);
+int ID3V240_UpdateCRC(const ID3V2 *id3, FILE *file);
 
 //////////////////////////////////////////////////////////////////////////////
 
