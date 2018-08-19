@@ -2,7 +2,7 @@
 
 SOURCE=$(find . -type f ! -path './test/*' -name "*.c")
 HEADER="-I."
-LIBS="-lprinthex"
+LIBS="-lprinthex -lz"
 
 for c in $SOURCE ;
 do    

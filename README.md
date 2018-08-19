@@ -18,12 +18,13 @@ I separated id3edit from the [MusicDB Project](https://github.com/rstemmer/music
  * It works from command line
  * Support for ID3v2.3.0 (most common) and ID3v2.4.0 (latest)
  * All encodings supported (ISO 8859-1, UTF-16 with BOM, UTF-16BE, UTF-8)
+ * Partial support of extended header: CRC feature supported!
 
 **Project State:** Alive
 
 ## Limitations
 
- * It does not care about any flags (usually no ID3 Tag or Frame flags are set) (some flags that may appear in the wild will be added in later versions)
+ * See Issue Tracker
 
 ## Name Definitions
 

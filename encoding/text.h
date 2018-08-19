@@ -1,5 +1,5 @@
-#ifndef ENCODING_H
-#define ENCODING_H
+#ifndef ENCODING_TEXT_H
+#define ENCODING_TEXT_H
 
 
 #define UTF16BOM_LE 0xFEFF
@@ -20,6 +20,7 @@ int Transcode(const char *from, const char *to, const void *input, size_t inputb
  */
 int Decode(unsigned char id3v2encoding, void *rawdata,  size_t rawdatasize, char *utf8text, size_t textlengthlimit, size_t *actualsize);
 int Encode(unsigned char id3v2encoding, const char *utf8text, size_t textlength,  void *rawdata,  size_t rawdatasizelimit, size_t *actualsize);
+
 #endif
 
 

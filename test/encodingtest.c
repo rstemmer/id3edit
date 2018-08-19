@@ -6,7 +6,8 @@
 #include <unistd.h>
 #include <id3v2.h>
 #include <id3v2frame.h>
-#include <encoding.h>
+#include <encoding/text.h>
+#include <encoding/crc.h>
 #include <rawfile.h>
 #include <printhex.h>
 #include <stdbool.h>
@@ -58,6 +59,27 @@ int main(int argc, char *argv[])
 
 
     printf("\e[1;37mTest set: \e[1;36mEncode/Decode\e[0m\n");
+
+    PrintTest("Decode unsynchronized CRC");
+    {
+    unsigned char enccrc[5] = {0x0F, 0x7F, 0x3C, 0x5A, 0x7F};
+    unsigned long deccrc;
+    unsigned long expectedcrc = 0xFFEF2D7F;
+    // 00001111 01111111 00111100 01011010 01111111
+    // 11111111 11101111 00101101 01111111 _BE
+    ID3V2_DecodeCRC(&deccrc, enccrc);
+    CheckEncoderResult(&deccrc, &expectedcrc, 4, 4);
+    }
+
+    PrintTest("Encode unsynchronized CRC");
+    {
+    unsigned char expectedcrc[5] = {0x0F, 0x7F, 0x3C, 0x5A, 0x7F};
+    unsigned char enccrc[5];
+    unsigned long crc = 0xFFEF2D7F;
+    ID3V2_EncodeCRC(crc, enccrc);
+    CheckEncoderResult(&enccrc, &expectedcrc, 5, 5);
+    }
+
 
     // Decode
     char text[1024];

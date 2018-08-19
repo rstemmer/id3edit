@@ -37,6 +37,7 @@ int RAWFILE_Read(const char *path, void **rawdata, size_t *size)
     data = malloc(filesize);
     if(data == NULL)
     {
+        fprintf(stderr, "%s, %i: ", __FILE__, __LINE__);
         fprintf(stderr, "Fatal Error! - malloc returned NULL!\n");
         return RAWFILEERROR_FATAL;
     }
