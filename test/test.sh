@@ -213,6 +213,27 @@ DSTSUM=$(md5sum $DSTPNGAW 2> /dev/null | cut -d " " -f 1)
 CheckValues $SRCSUM $DSTSUM
 
 
+
+PrintHeader "Creating and editing extended header"
+CreateTestMP3
+
+PrintTest "Add extended header with CRC for ID3v2.4.0"
+./id3edit --create --clear --force240 --add-crc --encoding utf-8 --set-name "This is a test 😈" --outfile $DST $SRC
+CheckResult "39b03484b15de1d8d65b322ad9687495"
+
+PrintTest "Remove extended header for ID3v2.4.0"
+./id3edit --rm-exthdr $DST
+CheckResult "f0828dbcabae5e872e9a288679983c30"
+
+PrintTest "Add extended header with CRC for ID3v2.3.0"
+./id3edit --create --clear --force230 --add-crc --set-name "This is a test 😈" --outfile $DST $SRC
+CheckResult "12f94b01880693dd674a1cdfd8190131"
+
+PrintTest "Remove extended header for ID3v2.3.0"
+./id3edit --rm-exthdr $DST
+CheckResult "b094b92ff7873618aebcc819d8b36355"
+
+
 echo -e "\n\e[1;37mRemoving tests …\e[0m"
 rm $SRCAW
 rm $DSTAW

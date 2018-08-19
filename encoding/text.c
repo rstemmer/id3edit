@@ -4,7 +4,7 @@
 #include <id3v2.h>
 #include <id3v2frame.h>
 #include <iconv.h>
-#include <encoding.h>
+#include <encoding/text.h>
 
 #ifdef DEBUG
 #include <printhex.h>
@@ -120,6 +120,7 @@ int Encode(unsigned char id3v2encoding, const char *utf8text, size_t textlength,
 
     return ID3V2ERROR_NOERROR;
 }
+
 
 // vim: tabstop=4 expandtab shiftwidth=4 softtabstop=4
 

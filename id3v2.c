@@ -5,49 +5,13 @@
 #include <string.h>
 #include <unistd.h>
 #include <id3v2.h>
-#include <endian.h>
 #include <stdbool.h>
+#include <encoding/text.h>
+#include <encoding/size.h>
+#include <crc32.h>
+
 
 bool OPT_PrintHeader = false;
-
-unsigned int ID3V2_EncodeSize(unsigned int size)
-{
-    // 1.: 0000xxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    //  -> 0xxxxxxx0xxxxxxx0xxxxxxx0xxxxxxx
-    unsigned int byte = 0;
-    unsigned int tmp  = 0;
-    for(int i=0; i<4; i++)
-    {
-        byte  = size >> (i*7);
-        byte &= 0x7F;
-        tmp  |= byte << (i*8);
-    }
-
-    // 2.: LE -> BE
-    unsigned int encsize;
-    encsize = htobe32(tmp);
-
-    return encsize;
-}
-unsigned int ID3V2_DecodeSize(unsigned int encsize)
-{
-    // 1.: BE -> LE
-    unsigned int tmp;
-    tmp = be32toh(encsize);
-
-    // 2.: 0xxxxxxx0xxxxxxx0xxxxxxx0xxxxxxx
-    //  -> 0000xxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    unsigned int byte = 0;
-    unsigned int size = 0;
-    for(int i=0; i<4; i++)
-    {
-        byte  = tmp  >> (i*8);
-        byte &= 0x7F;
-        size |= byte << (i*7);
-    }
-
-    return size;
-}
 
 int ID3V2_Open(ID3V2 **id3v2, const char *path, bool createtag)
 {
@@ -58,6 +22,7 @@ int ID3V2_Open(ID3V2 **id3v2, const char *path, bool createtag)
     ID3V2 *id3 = (ID3V2*) malloc(sizeof(ID3V2));
     if(id3 == NULL)
     {
+        fprintf(stderr, "%s, %i: ", __FILE__, __LINE__);
         fprintf(stderr, "Fatal Error! - malloc returned NULL!\n");
         return ID3V2ERROR_FATAL;
     }
@@ -67,6 +32,7 @@ int ID3V2_Open(ID3V2 **id3v2, const char *path, bool createtag)
     id3->path = (char*) malloc(sizeof(char)*pathlength);
     if(id3->path == NULL)
     {
+        fprintf(stderr, "%s, %i: ", __FILE__, __LINE__);
         fprintf(stderr, "Fatal Error! - malloc returned NULL!\n");
         free(id3);
         return ID3V2ERROR_FATAL;
@@ -149,15 +115,6 @@ int ID3V2_Open(ID3V2 **id3v2, const char *path, bool createtag)
         id3->rawmp3 = false; // there is a valid ID3 tag in the source file
     }
 
-    // Check flags
-    if(id3->header.flags != 0)
-    {
-        fprintf(stderr, "Unsupported flags detected. Set flags are: 0x%02X\n", id3->header.flags);
-        free(id3->path);
-        free(id3);
-        return ID3V2ERROR_NOTSUPPORTED;
-    }
-
     // Check version
     if((id3->header.version_major != 3 && id3->header.version_major != 4) || id3->header.version_minor != 0)
     {
@@ -169,40 +126,112 @@ int ID3V2_Open(ID3V2 **id3v2, const char *path, bool createtag)
         return ID3V2ERROR_NOTSUPPORTED;
     }
 
+    // Check flags
+    if(id3->header.flags != 0)
+    {
+#ifndef DEBUG
+        if(OPT_PrintHeader)
+#endif
+        {
+            printf("\e[1;37mFlags              Set Support\n");
+            printf("\e[1;34mUnsynchronisation  %s \e[1;34m[\e[1;31m✘\e[1;34m]\e[0m\n", 
+                    (id3->header.flags & ID3V2HEADERFLAG_UNSYNCHRONISATION)?
+                    "\e[1;34m[\e[1;36m✔\e[1;34m]":
+                    "\e[1;34m[\e[1;30m✘\e[1;34m]");
+            printf("\e[1;34mExtended Header    %s \e[1;34m[\e[1;33m✔\e[1;34m] \e[0;33m(partially)\e[0m\n",
+                    (id3->header.flags & ID3V2HEADERFLAG_EXTENDEDHEADER)?
+                    "\e[1;34m[\e[1;36m✔\e[1;34m]":
+                    "\e[1;34m[\e[1;30m✘\e[1;34m]");
+            printf("\e[1;34mExperimantal Tag   %s \e[1;34m[\e[1;32m✔\e[1;34m]\e[0m\n", 
+                    (id3->header.flags & ID3V2HEADERFLAG_EXPERIMENTAL)?
+                    "\e[1;34m[\e[1;36m✔\e[1;34m]":
+                    "\e[1;34m[\e[1;30m✘\e[1;34m]");
+            printf("\e[1;34mFooter available   %s \e[1;34m[\e[1;31m✘\e[1;34m] \e[1;30m(ID3v2.4.0 only)\e[0m\n", 
+                    (id3->header.flags & ID3V2HEADERFLAG_FOOTER)?
+                    "\e[1;34m[\e[1;36m✔\e[1;34m]":
+                    "\e[1;34m[\e[1;30m✘\e[1;34m]");
+        }
+
+        // Some flags are not supported. Exit id3edit when they are set.
+        if(id3->header.flags & (ID3V2HEADERFLAG_UNSYNCHRONISATION | ID3V2HEADERFLAG_FOOTER))
+        {
+            fprintf(stderr, "Unsupported flags detected. Set flags are: 0x%02X\n", id3->header.flags);
+            free(id3->path);
+            free(id3);
+            return ID3V2ERROR_NOTSUPPORTED;
+        }
+    }
+
     // read extended header if available
     if(id3->header.flags & ID3V2HEADERFLAG_EXTENDEDHEADER)
     {
-        fprintf(stderr, "Extended header are not supported yet!\n");
-        free(id3->path);
-        free(id3);
-        return ID3V2ERROR_NOTSUPPORTED;
-        // TODO
-        /*
-        fread(&bigendian, 4, 1, id3->file); id3->extheader.size        = be32toh(bigendian);
-        fread(&bigendian, 2, 1, id3->file); id3->extheader.flags       = be16toh(bigendian);
-        fread(&bigendian, 4, 1, id3->file); id3->extheader.paddingsize = be32toh(bigendian);
+        int error;
+        if(id3->header.version_major == 4) // ID3v2.4.0 uses a different structure
+            error = ID3V240_ReadExtendedHeader(id3);
+        else
+            error = ID3V230_ReadExtendedHeader(id3);
+
+        if(error)
+        {
+            free(id3->path);
+            free(id3);
+            return error;
+        }
 #ifndef DEBUG
         if(OPT_PrintHeader)
 #endif
         {
             printf("\e[1;37mExtended Header\n");
-            printf("\e[1;34mSize:         \033[0;36m%i\n",     id3->extheader.size);
-            printf("\e[1;34mFlags:        \033[0;36m0x%04X\n", id3->extheader.flags);
-            printf("\e[1;34mPadding Size: \033[0;36m%i\n",     id3->extheader.paddingsize);
+            printf("\e[1;34mSize:         \033[0;36m%i\n", id3->extheader.size);
+            printf("\e[1;34mPadding Size: \033[0;36m%i\n", id3->extheader.paddingsize);
+            printf("\e[1;37mExtended Flags   Set Support\n");
+            printf("\e[1;34mUpdated          %s \e[1;34m[\e[1;33m✔\e[1;34m] \e[0;33m(Doesn\'t make sense in files. Will be ignored)\e[0m\n",
+                    (id3->extheader.flag_update)?
+                    "\e[1;34m[\e[1;36m✔\e[1;34m]":
+                    "\e[1;34m[\e[1;30m✘\e[1;34m]");
+            printf("\e[1;34mCRC              %s \e[1;34m[\e[1;32m✔\e[1;34m] "
+                                               "\e[1;34mCRC: \e[0;36m0x%08lX\e[0m\n",
+                    (id3->extheader.flag_crc)?
+                    "\e[1;34m[\e[1;36m✔\e[1;34m]":
+                    "\e[1;34m[\e[1;30m✘\e[1;34m]",
+                    id3->extheader.crc);
+            printf("\e[1;34mRestricted       %s \e[1;34m[\e[1;31m✘\e[1;34m] \e[0;33m(Will be ignored)\e[0m\n", 
+                    (id3->extheader.flag_restricted)?
+                    "\e[1;34m[\e[1;36m✔\e[1;34m]":
+                    "\e[1;34m[\e[1;30m✘\e[1;34m]");
         }
-        */
     }
     else
     {
-        id3->extheader.size        = 0;
-        id3->extheader.flags       = 0;
-        id3->extheader.paddingsize = 0;
+        // Reset all values
+        id3->extheader.size            = 0;
+        id3->extheader.paddingsize     = 0;
+        id3->extheader.flag_update     = false;
+        id3->extheader.flag_crc        = false;
+        id3->extheader.flag_restricted = false;
+        id3->extheader.crc             = 0x00;
+        id3->extheader.restrictions    = 0x00;
     } 
 
     // read all frames
     id3->framelist      = NULL;
     ID3V2_FRAME  **next = &id3->framelist;
-    unsigned int offset = 0;
+    unsigned int offset;
+    // Calculate the start of the frames
+    if(id3->header.version_major == 4)
+    {
+        offset = id3->extheader.size;
+    }
+    else
+    {
+        if(id3->extheader.size > 0)
+            offset = id3->extheader.size + 4;
+        else
+            offset = 0;
+    }
+    id3->header.realsize = offset;
+
+
     while(offset < id3->header.origsize)
     {
         ID3V2_FRAME *frame;
@@ -210,6 +239,7 @@ int ID3V2_Open(ID3V2 **id3v2, const char *path, bool createtag)
         frame = (ID3V2_FRAME*) malloc(sizeof(ID3V2_FRAME));
         if(frame == NULL)
         {
+            fprintf(stderr, "%s, %i: ", __FILE__, __LINE__);
             fprintf(stderr, "Fatal Error! - malloc returned NULL!\n");
             return ID3V2ERROR_FATAL;
         }
@@ -244,6 +274,7 @@ int ID3V2_Open(ID3V2 **id3v2, const char *path, bool createtag)
         frame->data = malloc(frame->size);
         if(frame->data == NULL)
         {
+            fprintf(stderr, "%s, %i: ", __FILE__, __LINE__);
             fprintf(stderr, "Fatal Error! - malloc returned NULL!\n");
             return ID3V2ERROR_FATAL;
         }
@@ -325,6 +356,36 @@ int ID3V2_Open(ID3V2 **id3v2, const char *path, bool createtag)
         fprintf(stderr, "\tI\'ll do nothing - nothing will become worse.\n");
     }
 
+    // Calculate and compare CRC32 check sum if the corresponding flag is set in the header
+    long endofdata;
+    long startofdata;
+    startofdata = 10+id3->extheader.size;   // The data to consider start after the extended header
+    endofdata   = 10+id3->header.origsize;  // 10: Size of tag header
+    if(id3->header.version_major == 3)      // In ID3v2.3.0 …
+    {
+        endofdata   -= id3->extheader.paddingsize; // … only frame are considered and …
+        startofdata += 4;                          // … the ext header size variable is not count
+    }
+
+#ifndef DEBUG
+    if(OPT_PrintHeader)
+#endif
+    {
+        if(id3->extheader.flag_crc)
+        {
+            int error = 0;
+            error = CRC32FromFile(id3->file, startofdata, endofdata, &id3->extheader.realcrc);
+            if(error == 0)
+            {
+                printf("\e[1;37mCRC Check:\n");
+                printf("\e[1;34m\tStored:     \e[1;36m0x%08lX\n", id3->extheader.crc);
+                printf("\e[1;34m\tCalculated: %s0x%08lX\e[0m\n", 
+                        (id3->extheader.crc == id3->extheader.realcrc)?"\e[1;32m":"\e[1;31m",
+                        id3->extheader.realcrc);
+            }
+        }
+    }
+
     return ID3V2ERROR_NOERROR;
 }
 
@@ -390,10 +451,18 @@ int ID3V2_Close(ID3V2 *id3v2, const char *altpath, bool removetag)
         unsigned int encsize; 
         encsize = ID3V2_EncodeSize(id3->header.realsize + ID3V2PADDING);
         fwrite(&encsize, 4, 1, dstfile);
+
+        // Write extended header if available
+        if(id3->header.flags & ID3V2HEADERFLAG_EXTENDEDHEADER)
+        {
+            // TODO: Check size - is it a valid value? If not, get panic!
+            if(id3->header.version_major == 4)
+                ID3V240_WriteExtendedHeader(id3, dstfile);
+            else
+                ID3V230_WriteExtendedHeader(id3, dstfile);
+        }
     }
 
-    // Drop extended header
-    
     // Write frames
     ID3V2_FRAME *frame = id3->framelist;
     while(frame != NULL)
@@ -412,13 +481,9 @@ int ID3V2_Close(ID3V2 *id3v2, const char *altpath, bool removetag)
             // write frame size
             unsigned int encsize; 
             if(id3->header.version_major == 4) // ID3v2.4.0 uses a different encoding
-            {
                 encsize = ID3V2_EncodeSize(frame->size);
-            }
             else
-            {
                 encsize = htobe32(frame->size);
-            }
             fwrite(&encsize, 4, 1, dstfile);
 
             // write frame flags
@@ -448,11 +513,25 @@ int ID3V2_Close(ID3V2 *id3v2, const char *altpath, bool removetag)
         free(oldframe);
     }
 
-    // write padding bytes
+    // Finalize tag with padding bytes and check sum
     if(!readonly && !removetag)
     {
+        // Write padding bytes
         for(int i=0; i < ID3V2PADDING; i++)
             fputc(0x00, dstfile);
+
+        // Update CRC sum when necessary
+        if(id3->header.flags & ID3V2HEADERFLAG_EXTENDEDHEADER && id3->extheader.flag_crc)
+        {
+            // 2.3: Only frames, 2.4: frames+padding!
+            if(id3->header.version_major == 4)
+                error = ID3V240_UpdateCRC(id3, dstfile);
+            else
+                error = ID3V230_UpdateCRC(id3, dstfile);
+
+            if(error)
+                return error;
+        }
     }
 
     if(!readonly)
@@ -650,6 +729,7 @@ int ID3V2_GetFrame(const ID3V2 *id3v2, unsigned int ID, size_t *size, void **dat
         *data = malloc(frame->size);
         if(*data == NULL)
         {
+            fprintf(stderr, "%s, %i: ", __FILE__, __LINE__);
             fprintf(stderr, "Fatal Error! - malloc returned NULL!\n");
             return ID3V2ERROR_FATAL;
         }
@@ -675,6 +755,7 @@ int ID3V2_SetFrame(ID3V2 *id3v2, unsigned int ID, size_t size, const void *data)
     frame = malloc(sizeof(ID3V2_FRAME));
     if(frame == NULL)
     {
+        fprintf(stderr, "%s, %i: ", __FILE__, __LINE__);
         fprintf(stderr, "Fatal Error! - malloc returned NULL!\n");
         return ID3V2ERROR_FATAL;
     }
@@ -682,6 +763,7 @@ int ID3V2_SetFrame(ID3V2 *id3v2, unsigned int ID, size_t size, const void *data)
     frame->data = malloc(size);
     if(frame->data == NULL)
     {
+        fprintf(stderr, "%s, %i: ", __FILE__, __LINE__);
         fprintf(stderr, "Fatal Error! - malloc returned NULL!\n");
         return ID3V2ERROR_FATAL;
     }

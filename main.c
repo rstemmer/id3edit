@@ -7,12 +7,12 @@
 #include <unistd.h>
 #include <id3v2.h>
 #include <id3v2frame.h>
-#include <encoding.h>
+#include <encoding/text.h>
 #include <rawfile.h>
 #include <printhex.h>
 #include <stdbool.h>
 
-#define VERSION "2.0.3"
+#define VERSION "2.1.0"
 
 int CopyArgument(char **dst, char *src);
 int ProcessSetArgument(ID3V2 *id3v2, unsigned int ID, const char *argument, unsigned char encoding);
@@ -79,6 +79,8 @@ void PrintUsage()
     printf("\t\e[1;36m --showheader  \e[1;34m Print details of the headers while reading \n");
     printf("\t\e[1;36m --force230    \e[1;34m Force ID3 v 2.3.0 when writing \e[1;31m³\n");
     printf("\t\e[1;36m --force240    \e[1;34m Force ID3 v 2.4.0 when writing \e[1;31m³\n");
+    printf("\t\e[1;36m --add-crc     \e[1;34m Add extended header with CRC32 check sum \e[1;31m⁴\n");
+    printf("\t\e[1;36m --rm-exthdr   \e[1;34m Remove extended header \e[1;31m⁴\n");
     printf("\n");
 
     // Comments / footnotes
@@ -108,6 +110,9 @@ void PrintUsage()
     printf("\e[1;34m    You better only use it in the following combination: \e[1;36m--clear --create --force240\e[1;34m.\e[0m\n");
     printf("\e[1;30m    ID3v2.3.0 only allows UTF-16+BOM or ISO8859-1 encoded text.\e[0m\n");
     printf("\e[1;30m    Some frame IDs are different! (use --get-frames to check the new file)\e[0m\n");
+    printf("\n");
+
+    printf("\e[1;31m  ⁴ \e[1;33m\e[4mVery experimental!\e[0m\e[1;33m I do not know any other tool to compare my test results with.\e[0m\n");
     printf("\n");
 
     // Some warnings
@@ -167,6 +172,8 @@ int main(int argc, char *argv[])
     bool striptag   = false;
     bool force230   = false;
     bool force240   = false;
+    bool addcrc     = false;
+    bool rmexthdr   = false;
     bool getframelist=false;
     bool getname    = false;
     bool getalbum   = false;
@@ -190,6 +197,8 @@ int main(int argc, char *argv[])
         GETFLAG(striptag,     "--strip")
         GETFLAG(force230,     "--force230")
         GETFLAG(force240,     "--force240")
+        GETFLAG(addcrc,       "--add-crc")
+        GETFLAG(rmexthdr,     "--rm-exthdr")
         GETFLAG(OPT_PrintHeader, "--showheader")    // Global flag for the id3v2.c code
         GETFLAG(getframelist, "--get-frames")       // \_ Allow both options to show a list of frames
         GETFLAG(getframelist, "--get-framelist")    // /
@@ -304,6 +313,10 @@ int main(int argc, char *argv[])
     {
         if(ProcessSetArgument(id3v2, 'TDRC', newrelease, encoding) != 0) goto exit;
     }
+
+    // Extended Header Features
+    if(rmexthdr) if(ID3V2_RemoveExtendedHeader(id3v2)                                               != 0) goto exit;
+    if(addcrc)   if(ID3V2_UpdateExtendedHeader(id3v2, /*updated*/false, addcrc, /*restricted*/0x00) != 0) goto exit;
 
     // CLOSE
     if(readonly)
@@ -440,6 +453,7 @@ int ProcessGetArgument(const ID3V2 *id3v2, unsigned int ID, const char *name)
     textbuffer = malloc(bufferlimit);
     if(textbuffer == NULL)
     {
+        fprintf(stderr, "%s, %i: ", __FILE__, __LINE__);
         fprintf(stderr, "Critical Error: malloc returned NULL!\n");
         return -1;
     }
@@ -865,6 +879,7 @@ int GetEncoding(const char *codename, unsigned char *encoding)
     name = malloc(sizeof(char) * size);
     if(name == NULL)
     {
+        fprintf(stderr, "%s, %i: ", __FILE__, __LINE__);
         fprintf(stderr, "Critical Error: malloc returned NULL!\n");
         return -1;
     }
@@ -934,6 +949,7 @@ int CopyArgument(char **dst, char *src)
     *dst = malloc(sizeof(char)*length+1); // +1 for the \0
     if(*dst == NULL)
     {
+        fprintf(stderr, "%s, %i: ", __FILE__, __LINE__);
         fprintf(stderr, "Critical Error: malloc returned NULL!\n");
         return -1;
     }

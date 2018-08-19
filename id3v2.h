@@ -18,12 +18,11 @@
 #define ID3V2ERROR_UNSUPPORTEDENCODING -8
 #define ID3V2ERROR_BUFFEROVERFLOW   -9
 
+
 #define ID3V2HEADERFLAG_UNSYNCHRONISATION (1<<7)
 #define ID3V2HEADERFLAG_EXTENDEDHEADER    (1<<6)
 #define ID3V2HEADERFLAG_EXPERIMENTAL      (1<<5)
 #define ID3V2HEADERFLAG_FOOTER            (1<<4) /*indicates a footer - new in 2.4*/
-
-#define ID3V2ID_TO_CHARS(i) (((i)>>24)&0xFF),(((i)>>16)&0xFF),(((i)>> 8)&0xFF),(((i)>> 0)&0xFF)
 
 // all structs are interpreted and decoded versions of the raw data
 typedef struct
@@ -34,16 +33,31 @@ typedef struct
     unsigned char flags;            // ID3V2HEADERFLAG_*
     unsigned int  origsize;         // size of the ID3 infos as stored in the files header
     unsigned int  realsize;         // sum of all read ID3 data (incl. frame-header) excluding padding bytes
-                                    //   realsize will be alway up to date after changing frames, 
+                                    //   realsize will be always up to date after changing frames, 
                                     //   origsize will never change
 } ID3V2_HEADER;
 
+
+#define ID3V230EXTHDRFLAG_CRC             (1<<15)
+
+#define ID3V240EXTHDRFLAG_UPDATE          (1<<6)
+#define ID3V240EXTHDRFLAG_CRC             (1<<5)
+#define ID3V240EXTHDRFLAG_RESTRICTED      (1<<4)
+
 typedef struct
 {
-    unsigned int   size;
-    unsigned short flags;
-    unsigned int   paddingsize;
+    unsigned int size;          // keep in mind to update when changing the ext. header
+    unsigned int paddingsize;   // ID3v2.3.0 only
+
+    bool flag_update;
+    bool flag_crc;
+    bool flag_restricted;
+
+    unsigned long crc;
+    unsigned long realcrc;
+    unsigned char restrictions;
 } ID3V2_EXTHEADER;
+
 
 #define ID3V2FRAMEFLAG_DISCARD_FRAME    (1<<15)
 #define ID3V2FRAMEFLAG_DISCARD_FILE     (1<<14)
@@ -51,6 +65,7 @@ typedef struct
 #define ID3V2FRAMEFLAG_COMPRESSED       (1<< 7)
 #define ID3V2FRAMEFLAG_ENCRYPTED        (1<< 6)
 #define ID3V2FRAMEFLAG_FRAMEGROUP       (1<< 5)
+
 struct ID3V2_FRAME
 {
     unsigned int   ID;
@@ -61,9 +76,12 @@ struct ID3V2_FRAME
 };
 typedef struct ID3V2_FRAME ID3V2_FRAME;
 
+#define ID3V2ID_TO_CHARS(i) (((i)>>24)&0xFF),(((i)>>16)&0xFF),(((i)>> 8)&0xFF),(((i)>> 0)&0xFF)
+
+
 typedef struct
 {
-    char *path;     // path of the filename
+    char *path;     // path of the file name
     FILE *file;     // file pointer
     bool rawmp3;    // true when there was no ID3 header in the file before
     
@@ -75,6 +93,18 @@ typedef struct
 //////////////////////////////////////////////////////////////////////////////
 
 extern bool OPT_PrintHeader;    // print header detail while reading the ID3 tag
+
+//////////////////////////////////////////////////////////////////////////////
+// Extended Header parser
+// !! Make sure id3->file points to the begin of the extended header
+int ID3V2_UpdateExtendedHeader(ID3V2 *id3, bool update, bool crc, unsigned char restrictions); // Update structure
+int ID3V2_RemoveExtendedHeader(ID3V2 *id3); // Clear structure
+int ID3V230_ReadExtendedHeader(ID3V2 *id3);
+int ID3V240_ReadExtendedHeader(ID3V2 *id3);
+int ID3V230_WriteExtendedHeader(const ID3V2 *id3, FILE *file);
+int ID3V240_WriteExtendedHeader(const ID3V2 *id3, FILE *file);
+int ID3V230_UpdateCRC(const ID3V2 *id3, FILE *file);
+int ID3V240_UpdateCRC(const ID3V2 *id3, FILE *file);
 
 //////////////////////////////////////////////////////////////////////////////
 
