@@ -60,24 +60,51 @@ typedef struct
 } ID3V2_EXTHEADER;
 
 
-#define ID3V2FRAMEFLAG_DISCARD_FRAME    (1<<15)
-#define ID3V2FRAMEFLAG_DISCARD_FILE     (1<<14)
-#define ID3V2FRAMEFLAG_READONLY         (1<<13)
-#define ID3V2FRAMEFLAG_COMPRESSED       (1<< 7)
-#define ID3V2FRAMEFLAG_ENCRYPTED        (1<< 6)
-#define ID3V2FRAMEFLAG_FRAMEGROUP       (1<< 5)
+#define ID3V230FRAMEFLAG_TagAlterPreservation   (1<<15)
+#define ID3V230FRAMEFLAG_FileAlterPreservation  (1<<14)
+#define ID3V230FRAMEFLAG_ReadOnly               (1<<13)
+#define ID3V230FRAMEFLAG_Compression            (1<< 7)
+#define ID3V230FRAMEFLAG_Encryption             (1<< 6)
+#define ID3V230FRAMEFLAG_GroupingIdentity       (1<< 5)
+
+#define ID3V240FRAMEFLAG_TagAlterPreservation   (1<<14)
+#define ID3V240FRAMEFLAG_FileAlterPreservation  (1<<13)
+#define ID3V240FRAMEFLAG_ReadOnly               (1<<12)
+#define ID3V240FRAMEFLAG_Compression            (1<< 3)
+#define ID3V240FRAMEFLAG_Encryption             (1<< 2)
+#define ID3V240FRAMEFLAG_GroupingIdentity       (1<< 6)
+#define ID3V240FRAMEFLAG_Unsynchronisation      (1<< 1)
+#define ID3V240FRAMEFLAG_DataLengthIndicator    (1<< 0)
+
 
 struct ID3V2_FRAME
 {
     unsigned int   ID;
     unsigned int   size;
-    unsigned short flags;   // ID3V3FRAMEFLAG_*
+    unsigned short flags;   // ID3V2x0FRAMEFLAG_*
     void*          data;    // Data of the frame
     struct ID3V2_FRAME *next;
 };
 typedef struct ID3V2_FRAME ID3V2_FRAME;
 
 #define ID3V2ID_TO_CHARS(i) (((i)>>24)&0xFF),(((i)>>16)&0xFF),(((i)>> 8)&0xFF),(((i)>> 0)&0xFF)
+
+struct ID3V2_FRAMEFLAGS
+{
+    bool TagAlterPreservation;
+    bool FileAlterPreservation;
+    bool ReadOnly;
+    bool Compression;
+    bool Encryption;
+    bool GroupingIdentity;
+    bool Unsynchronisation;    // \_ ID3v2.4.0 only
+    bool DataLengthIndicator;  // /
+};
+typedef struct ID3V2_FRAMEFLAGS ID3V2_FRAMEFLAGS;
+
+int ID3V2_DecodeFrameFlags(int version, const ID3V2_FRAME *frame, ID3V2_FRAMEFLAGS *frameflags);
+int ID3V2_EncodeFrameFlags(int version, ID3V2_FRAME *frame, const ID3V2_FRAMEFLAGS *frameflags);
+
 
 
 typedef struct
