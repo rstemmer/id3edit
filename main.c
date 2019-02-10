@@ -12,7 +12,7 @@
 #include <printhex.h>
 #include <stdbool.h>
 
-#define VERSION "2.1.0"
+#define VERSION "2.1.2"
 
 int CopyArgument(char **dst, char *src);
 int ProcessSetArgument(ID3V2 *id3v2, unsigned int ID, const char *argument, unsigned char encoding);
