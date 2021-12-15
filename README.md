@@ -1,4 +1,27 @@
-# id3edit
+<h3 align="center">id3edit</h3>
+
+<div align="center">
+  Status: 🟢  Active - License: GPL v3
+</div>
+
+---
+
+<p align="center">id3edit is a command line ID3v2 tag editor and debugger
+    <br/>
+</p>
+
+![Print all frames with details](screenshots/02.jpg?raw=true)
+
+```bash
+git clone https://github.com/rstemmer/id3edit.git
+cd id3edit
+./build.sh
+sudo ./install.sh
+
+id3edit --readonly --showheader --get-all --get-frames bugtrigger.mp3
+```
+
+## Features
 
 `id3edit` is a command line editor to edit and **debug** ID3v2 tags ([ID3v2.3.0](http://id3.org/id3v2.3.0) & [ID3v2.4.0](http://id3.org/id3v2.4.0-structure) of mp3 files with full Unicode support.
 
