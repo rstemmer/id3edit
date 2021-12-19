@@ -14,10 +14,10 @@ int CRC32FromFile(FILE *file, long from, long to, unsigned long *crc)
     }
 
     // Create Buffer
-    unsigned char  *buffer;
+    unsigned char *buffer;
     size_t buffersize = to-from;
 
-    buffer = malloc(buffersize * sizeof(char));
+    buffer = malloc(buffersize * sizeof(unsigned char));
     if(buffer == NULL)
     {
         fprintf(stderr, "%s, %i: ", __FILE__, __LINE__);
@@ -32,6 +32,7 @@ int CRC32FromFile(FILE *file, long from, long to, unsigned long *crc)
     {
         fprintf(stderr, "%s, %i: ", __FILE__, __LINE__);
         fprintf(stderr, "Fatal Error! - Setting correct file position failed!\n");
+        free(buffer);
         return -1;
     }
 
@@ -42,12 +43,17 @@ int CRC32FromFile(FILE *file, long from, long to, unsigned long *crc)
     {
         fprintf(stderr, "%s, %i: ", __FILE__, __LINE__);
         fprintf(stderr, "Fatal Error! - Only %zu of %zu bytes read from file!\n", bytesread, buffersize);
+        free(buffer);
         return -1;
     }
 
     // Calculate CRC32
     if(crc == NULL)
+    {
+        free(buffer);
         return 0;
+    }
+
     *crc = crc32(0x00000000, buffer, buffersize);
 
     // Clean up
