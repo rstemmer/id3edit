@@ -128,6 +128,16 @@ PrintTest "Remove ID3v2 Tag"
 ./id3edit --strip $DST
 CheckResult "3064cf73aa8541e96201f8fab55293b2"
 
+PrintTest "Try remove ID3v2 Tag from bare mp3 file \e[1;30m(Issue #20)"
+CreateTestMP3
+./id3edit --strip $SRC > /dev/null 2>&1
+if [[ $? != 0 ]] ; then
+    echo -e "\e[u\e[1;31m✘"
+else
+    cp "$SRC" "$DST"
+    CheckResult "3064cf73aa8541e96201f8fab55293b2"
+fi
+
 
 
 PrintHeader "Creating and editing Text Frames"
