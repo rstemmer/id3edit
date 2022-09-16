@@ -944,8 +944,8 @@ int CopyArgument(char **dst, char *src)
     if(*dst != NULL)
         return -1;
 
-    size_t length = strlen(src);
-    *dst = malloc(sizeof(char)*length+1); // +1 for the \0
+    size_t length = strlen(src) + 1; // +1 for the \0
+    *dst = malloc(sizeof(char)*length);
     if(*dst == NULL)
     {
         fprintf(stderr, "%s, %i: ", __FILE__, __LINE__);
