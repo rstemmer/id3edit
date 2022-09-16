@@ -190,6 +190,16 @@ CreateTestMP3
 ./id3edit --create --force240 --set-release 2018 --outfile $DST $SRC
 CheckResult "9df4c22b8b82db833ff7ce99b148c86c"
 
+PrintTest "Edit a frame without --create when no Tag exists \e[1;30m(Issue #25)"
+CreateTestMP3
+./id3edit --set-name "test" $SRC > /dev/null 2>&1 # An error message should be print
+if [[ $? == 0 ]] ; then # And exit failure code should be returned
+    echo -e "\e[u\e[1;31m✘"
+else
+    cp "$SRC" "$DST"
+    CheckResult "3064cf73aa8541e96201f8fab55293b2"
+fi
+
 
 PrintHeader "Creating and editing artwork"
 CreateTestMP3

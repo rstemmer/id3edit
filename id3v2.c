@@ -81,21 +81,31 @@ int ID3V2_Open(ID3V2 **id3v2, const char *path, bool createtag)
     if(id3->header.ID[0] != 'I' || id3->header.ID[1] != 'D' || id3->header.ID[2] != '3')
     {
         // in case this is a bare mp3 file, just create a new tag
-        if( (createtag && id3->header.ID[0] == 0xFF && id3->header.ID[1] == 0xFB)   // *.mp3 (standard)
-         || (createtag && id3->header.ID[0] == 0xFF && id3->header.ID[1] == 0xFA)   // *.mp3 (found somewhere)
-         || (createtag && id3->header.ID[0] == 0xFF && id3->header.ID[1] == 0xF3)   // *.mp3 (found somewhere)
-         || (createtag && id3->header.ID[0] == 0xFF && id3->header.ID[1] == 0xFD) ) // *.mp3 (found somewhere)
+        if( (id3->header.ID[0] == 0xFF && id3->header.ID[1] == 0xFB)   // *.mp3 (standard)
+         || (id3->header.ID[0] == 0xFF && id3->header.ID[1] == 0xFA)   // *.mp3 (found somewhere)
+         || (id3->header.ID[0] == 0xFF && id3->header.ID[1] == 0xF3)   // *.mp3 (found somewhere)
+         || (id3->header.ID[0] == 0xFF && id3->header.ID[1] == 0xFD) ) // *.mp3 (found somewhere)
         {
-            id3->header.ID[0]         = 'I';
-            id3->header.ID[1]         = 'D';
-            id3->header.ID[2]         = '3';
-            id3->header.version_major = 3;      // \_ version 2.3.0
-            id3->header.version_minor = 0;      // /
-            id3->header.flags         = 0;      // No flags
-            id3->header.origsize      = 0;      // No frames
-            id3->rawmp3               = true;   // there was no ID3 Tag before
-            // Reverse previous attempts to read the ID3 header
-            fseek(id3->file, 0, SEEK_SET);  
+            if(createtag)
+            {
+                id3->header.ID[0]         = 'I';
+                id3->header.ID[1]         = 'D';
+                id3->header.ID[2]         = '3';
+                id3->header.version_major = 3;      // \_ version 2.3.0
+                id3->header.version_minor = 0;      // /
+                id3->header.flags         = 0;      // No flags
+                id3->header.origsize      = 0;      // No frames
+                id3->rawmp3               = true;   // there was no ID3 Tag before
+                // Reverse previous attempts to read the ID3 header
+                fseek(id3->file, 0, SEEK_SET);
+            }
+            else
+            {
+                fprintf(stderr, "Give file does not have an ID3v2 Tag. Use --create if you want to create one.\n");
+                free(id3->path);
+                free(id3);
+                return ID3V2ERROR_NOTSUPPORTED;
+            }
         }
         else
         {
