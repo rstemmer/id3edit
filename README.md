@@ -13,10 +13,20 @@
 ![Print all frames with details](screenshots/02.jpg?raw=true)
 
 ```bash
+# Install clang and zlib
+pacman -S clang zlib # Use the package manager of your distribution
+
+# Install libprinthex
+git clone https://github.com/rstemmer/libprinthex.git
+cd libprinthex
+./build.sh
+sudo ./install.sh # Installs to /usr/local/{lib,include}
+
+# Install id3edit
 git clone https://github.com/rstemmer/id3edit.git
 cd id3edit
 ./build.sh
-sudo ./install.sh
+sudo ./install.sh # Installs to /usr/local/bin
 
 id3edit --readonly --showheader --get-all --get-frames bugtrigger.mp3
 ```
@@ -184,6 +194,7 @@ Furthermore the 'ä' got replaced by a 'd' which indicated further Unicode probl
 
  1. Install dependencies:
     * `clang`
+    * `zlib`
     * [libprinthex](https://github.com/rstemmer/libprinthex)
  2. You should check the `install.sh` script before executing. The default installation path is _/usr/local/bin_.
  3. Follow the following instructions:
