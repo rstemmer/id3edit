@@ -1,5 +1,9 @@
-#include <errno.h> 
+#include <errno.h>
+#ifdef __APPLE__
+#include "macos_endian.h"
+#else
 #include <endian.h>
+#endif
 #include <encoding/size.h>
 
 

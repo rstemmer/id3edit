@@ -11,7 +11,9 @@
 #include <rawfile.h>
 #include <printhex.h>
 #include <stdbool.h>
-
+#ifdef __APPLE__
+#include "macos_endian.h"
+#endif
 
 int CopyArgument(char **dst, char *src);
 int ProcessSetArgument(ID3V2 *id3v2, unsigned int ID, const char *argument, unsigned char encoding);
