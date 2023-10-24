@@ -16,16 +16,16 @@
 
 void PrintTest(const char *name)
 {
-    printf("\e[1;37m[\e[s ]\e[1;34m %s\e[0m ", name);
+    printf("\e[1;37m[\e7 ]\e[1;34m %s\e[0m ", name);
     fflush(stdout);
 }
 void PrintTestSucceeded()
 {
-    printf("\e[u\e[1;32m✔\e[0m\n");
+    printf("\e8\e[1;32m✔\e[0m\n");
 }
 void PrintTestFailed()
 {
-    printf("\e[u\e[1;31m✘\e[0m\n");
+    printf("\e8\e[1;31m✘\e[0m\n");
 }
 
 
