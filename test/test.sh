@@ -60,32 +60,37 @@ C0lEQVQImWP4DwQACfsD/eNV8pwAAAAASUVORK5CYII=
 EOF
 }
 
+# MacOS comes with an old bash version that has issues with "\e":
+# https://unix.stackexchange.com/questions/730403/echo-e-e-does-not-print-an-escape-from-bash-script-on-macos
+# For this reason, all strings printed via echo will be treated via $"".
+# Furthermore, Terminal.app does not support \e[s or u, instead \e7 or 8 is used for cursor position management.
+
 function PrintHeader {
-    echo -e "\n\e[1;37mTest set: \e[1;36m$@\e[0m"
+    echo $'\n\e[1;37mTest set: \e[1;36m'$@$'\e[0m'
 }
 function PrintTest {
-    echo -e -n "\e[1;37m[\e[s ]\e[1;34m $@\e[0m"
+    echo -n $'\e[1;37m[\e7 ]\e[1;34m '$@$'\e[0m'
 }
 
 function CheckResult {
     CHECKSUM=$(md5sum $DST 2> /dev/null | cut -d " " -f 1)
 
     if [ "$1" == "$CHECKSUM" ] ; then
-        echo -e "\e[u\e[1;32m✔"
+        echo $'\e8\e[1;32m✔'
     else
-        echo -e "\e[u\e[1;31m✘"
+        echo $'\e8\e[1;31m✘'
     fi
 }
 function CheckValues {
     if [ "$1" == "$2" ] ; then
-        echo -e "\e[u\e[1;32m✔"
+        echo $'\e8\e[1;32m✔'
     else
-        echo -e "\e[u\e[1;31m✘"
+        echo $'\e8\e[1;31m✘'
     fi
 }
 
 
-echo -e "\e[1;37mRunning tests …\e[0m"
+echo $'\e[1;37mRunning tests …\e[0m'
 mkdir ./tmp
 cp ../id3edit ./id3edit
 
@@ -128,11 +133,11 @@ PrintTest "Remove ID3v2 Tag"
 ./id3edit --strip $DST
 CheckResult "3064cf73aa8541e96201f8fab55293b2"
 
-PrintTest "Try remove ID3v2 Tag from bare mp3 file \e[1;30m(Issue #20)"
+PrintTest $'Try remove ID3v2 Tag from bare mp3 file \e[1;30m(Issue #20)'
 CreateTestMP3
 ./id3edit --strip $SRC > /dev/null 2>&1
 if [[ $? != 0 ]] ; then
-    echo -e "\e[u\e[1;31m✘"
+    echo $'\e8\e[1;31m✘'
 else
     cp "$SRC" "$DST"
     CheckResult "3064cf73aa8541e96201f8fab55293b2"
@@ -190,11 +195,11 @@ CreateTestMP3
 ./id3edit --create --force240 --set-release 2018 --outfile $DST $SRC
 CheckResult "9df4c22b8b82db833ff7ce99b148c86c"
 
-PrintTest "Edit a frame without --create when no Tag exists \e[1;30m(Issue #25)"
+PrintTest $'Edit a frame without --create when no Tag exists \e[1;30m(Issue #25)'
 CreateTestMP3
 ./id3edit --set-name "test" $SRC > /dev/null 2>&1 # An error message should be print
 if [[ $? == 0 ]] ; then # And exit failure code should be returned
-    echo -e "\e[u\e[1;31m✘"
+    echo $'\e8\e[1;31m✘'
 else
     cp "$SRC" "$DST"
     CheckResult "3064cf73aa8541e96201f8fab55293b2"
@@ -253,7 +258,7 @@ PrintTest "Remove extended header for ID3v2.3.0"
 CheckResult "8d4d5c79f926c6fdd7ed045738861035"
 
 
-echo -e "\n\e[1;37mRemoving tests …\e[0m"
+echo $'\n\e[1;37mRemoving tests …\e[0m'
 rm $SRCAW
 rm $DSTAW
 rm $SRCPNGAW
