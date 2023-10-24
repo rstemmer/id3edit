@@ -9,7 +9,9 @@
 #include <encoding/text.h>
 #include <encoding/size.h>
 #include <crc32.h>
-
+#ifdef __APPLE__
+#include "macos_endian.h"
+#endif
 
 bool OPT_PrintHeader = false;
 

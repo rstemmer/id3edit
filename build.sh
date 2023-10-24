@@ -1,8 +1,13 @@
 #!/usr/bin/env bash
 
 SOURCE=$(find . -type f ! -path './test/*' -name "*.c")
+if [ "$(uname)" == "Darwin" ]; then
+HEADER="-I. -I/usr/local/include"
+LIBS="-L/usr/local/lib -lz -liconv -lprinthex"
+else
 HEADER="-I."
 LIBS="-lprinthex -lz"
+fi
 VERSION=$(head -n1 CHANGELOG | cut -d ' ' -f 1)
 
 for c in $SOURCE ;

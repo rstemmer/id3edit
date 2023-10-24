@@ -3,7 +3,11 @@
 #include <stdlib.h>
 #include <limits.h>
 #include <unistd.h>
+#ifdef __APPLE__
+#include "macos_endian.h"
+#else
 #include <endian.h>
+#endif
 #include <stdbool.h>
 #include <encoding/size.h>
 #include <encoding/crc.h>
