@@ -111,9 +111,12 @@ int main(int argc, char *argv[])
     // Encode
     char code[1024];
 
-    PrintTest("Encode UTF-16LE with BOM");
+    PrintTest("Encode UTF-16 with BOM");
     error = Encode(ID3V2TEXTENCODING_UTF16_BOM, "Täst 😈", strlen("Täst 😈"), code, 1024, &actualsize);
-    CheckEncoderResult(code, utf16bomle, 8*2, actualsize);
+    if(*(unsigned char*)code == 0xFF)
+        CheckEncoderResult(code, utf16bomle, 8*2, actualsize);
+    else
+        CheckEncoderResult(code, utf16bombe, 8*2, actualsize);
 
     PrintTest("Encode UTF-16BE without BOM");
     error = Encode(ID3V2TEXTENCODING_UTF16_BE, "Täst 😈", strlen("Täst 😈"), code, 1024, &actualsize);
