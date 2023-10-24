@@ -73,7 +73,12 @@ function PrintTest {
 }
 
 function CheckResult {
-    CHECKSUM=$(md5sum $DST 2> /dev/null | cut -d " " -f 1)
+    if [ "$(uname)" == "Darwin" ]; then
+        CHECKSUM=$(md5 $DST 2> /dev/null | cut -d " " -f 4)
+        # HACK: The cut part fails if $DST contains a space!
+    else
+        CHECKSUM=$(md5sum $DST 2> /dev/null | cut -d " " -f 1)
+    fi
 
     if [ "$1" == "$CHECKSUM" ] ; then
         echo $'\e8\e[1;32m✔'
