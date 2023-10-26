@@ -53,7 +53,16 @@ I separated id3edit from the [MusicDB Project](https://github.com/rstemmer/music
  * All encodings supported (ISO 8859-1, UTF-16 with BOM, UTF-16BE, UTF-8)
  * Partial support of extended header: CRC feature supported!
 
-**Project State:** Alive
+**Execution environment:**
+
+ * Linux
+ * macOS
+    * Ported by [Slava Baryshnikov (SeventyB)](https://github.com/SeventyB)
+ * Docker
+    * Maintained by [Hendri Kurniawan (hckurniawan)](https://github.com/hckurniawan)
+    * Dockerfile: [github.com/hckurniawan/docker-id3edit](https://github.com/hckurniawan/docker-id3edit)
+    * Image: [hub.docker.com](https://hub.docker.com/r/hckurniawan/id3edit)
+
 
 ## Limitations
 
@@ -193,13 +202,26 @@ Furthermore the 'ä' got replaced by a 'd' which indicated further Unicode probl
 ## Installation
 
  1. Install dependencies:
+    * `git`
     * `clang`
-    * `zlib`
+    * `zlib` (On Linux)
     * [libprinthex](https://github.com/rstemmer/libprinthex)
  2. You should check the `install.sh` script before executing. The default installation path is _/usr/local/bin_.
  3. Follow the following instructions:
 
 ```bash
+# On Linux: Install clang and zlib
+pacman -S git clang zlib # Use the package manager of your distribution
+# On MacOS:
+xcode-select --install # In case git/clang do not work yet
+
+# Install libprinthex
+git clone https://github.com/rstemmer/libprinthex.git
+cd libprinthex
+./build.sh
+sudo ./install.sh # Installs to /usr/local/{lib,include}
+
+
 # download
 git clone https://github.com/rstemmer/id3edit.git
 cd id3edit
