@@ -4,3 +4,4 @@
 *.swo
 id3edit
 test/encodingtest
+*.dSYM
