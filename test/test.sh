@@ -82,6 +82,8 @@ function CheckResult {
 
     if [ "$1" == "$CHECKSUM" ] ; then
         echo $'\e8\e[1;32m✔'
+    elif [ "$2" == "$CHECKSUM" ] ; then # Check optional alternative hash (UTF16LE/BE can cause two valid hashed)
+        echo $'\e8\e[1;32m✔'
     else
         echo $'\e8\e[1;31m✘'
     fi
@@ -155,15 +157,15 @@ CreateTestMP3
 
 PrintTest "Create new ID3 Tag and set a Text Frame (with Unicode)"
 ./id3edit --create --set-name "This is a test 😈" --outfile $DST $SRC
-CheckResult "8d4d5c79f926c6fdd7ed045738861035"
+CheckResult "8d4d5c79f926c6fdd7ed045738861035" "a5eca12f2a8f0ec4400cb313b61389ef"
 
 PrintTest "Replace Text Frame with shorter text"
 ./id3edit --set-name "Test" $DST
-CheckResult "2754887be18efe5ff5e668806ce0b0d6"
+CheckResult "2754887be18efe5ff5e668806ce0b0d6" "a0feb0180017e366b29e8acac35bbbae"
 
 PrintTest "Replace Text Frame with longer text"
 ./id3edit --set-name "A very very long text with lots of characters" $DST
-CheckResult "a781e6ad1d326cb2a453063d678dfbfc"
+CheckResult "a781e6ad1d326cb2a453063d678dfbfc" "362d63a57002dbde7225b61e8914ce5c"
 
 PrintTest "Remove all Frames from ID3 Tag"
 ./id3edit --clear $DST
@@ -172,11 +174,11 @@ CheckResult "2db1325baddc98e921587e07a724e0d8"
 PrintTest "Try replacing Text Frame with read-only flag"
 ./id3edit --set-name "Test" $DST
 ./id3edit --readonly --set-name "This is a test 😈" $DST
-CheckResult "2754887be18efe5ff5e668806ce0b0d6"
+CheckResult "2754887be18efe5ff5e668806ce0b0d6" "a0feb0180017e366b29e8acac35bbbae"
 
 PrintTest "Set UTF-16+BOM encoded Text Frame"
 ./id3edit --create --force230 --encoding UTF-16 --set-name "This is a test 😈" --outfile $DST $SRC
-CheckResult "8d4d5c79f926c6fdd7ed045738861035"
+CheckResult "8d4d5c79f926c6fdd7ed045738861035" "a5eca12f2a8f0ec4400cb313b61389ef"
 
 PrintTest "Set UTF-16BE encoded Text Frame"
 ./id3edit --create --force240 --encoding UTF-16BE --set-name "This is a test 😈" $DST
@@ -193,12 +195,12 @@ CheckResult "362ef00025ee5d1475bd87fd4aab4e1f"
 PrintTest "Set release year for ID3v2.3.0"
 CreateTestMP3
 ./id3edit --create --force230 --set-release 2018 --outfile $DST $SRC
-CheckResult "0855d28dbb241084557dbe6a23072ac8"
+CheckResult "0855d28dbb241084557dbe6a23072ac8" "65616b5e6af030442e6516c6ff909808"
 
 PrintTest "Set release year for ID3v2.4.0"
 CreateTestMP3
 ./id3edit --create --force240 --set-release 2018 --outfile $DST $SRC
-CheckResult "9df4c22b8b82db833ff7ce99b148c86c"
+CheckResult "9df4c22b8b82db833ff7ce99b148c86c" "c75b867c767c0929008f9d37186bbe63"
 
 PrintTest $'Edit a frame without --create when no Tag exists \e[1;30m(Issue #25)'
 CreateTestMP3
@@ -256,11 +258,11 @@ CheckResult "99573302df02f4330546d30b20bff93a"
 
 PrintTest "Add extended header with CRC for ID3v2.3.0"
 ./id3edit --create --clear --force230 --add-crc --set-name "This is a test 😈" --outfile $DST $SRC
-CheckResult "c2d85c317db361f41766e059a323b791"
+CheckResult "c2d85c317db361f41766e059a323b791" "175c935e03069ac38f5732c6ade6abdb"
 
 PrintTest "Remove extended header for ID3v2.3.0"
 ./id3edit --rm-exthdr $DST
-CheckResult "8d4d5c79f926c6fdd7ed045738861035"
+CheckResult "8d4d5c79f926c6fdd7ed045738861035" "a5eca12f2a8f0ec4400cb313b61389ef"
 
 
 echo $'\n\e[1;37mRemoving tests …\e[0m'
