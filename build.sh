@@ -1,18 +1,17 @@
-#!/usr/bin/env bash
+#!/bin/sh
 
 SOURCE=$(find . -type f ! -path './test/*' -name "*.c")
-if [ "$(uname)" == "Darwin" ]; then
 HEADER="-I. -I/usr/local/include"
-LIBS="-L/usr/local/lib -lz -liconv -lprinthex"
+if [ "$(uname)" = "Linux" ]; then
+    LIBS="-L/usr/local/lib -lprinthex -lz"
 else
-HEADER="-I."
-LIBS="-lprinthex -lz"
+    LIBS="-L/usr/local/lib -lz -liconv -lprinthex"
 fi
 VERSION=$(head -n1 CHANGELOG | cut -d ' ' -f 1)
 
 for c in $SOURCE ;
 do    
-    echo -e "\e[1;34mCompiling $c …\e[0m"
+    printf "\033[1;34mCompiling $c …\033[0m\n"
     clang -DxDEBUG -DVERSION="\"$VERSION\"" -Wno-multichar --std=gnu99 $HEADER -O2 -g -c -o "${c%.*}.o" $c
 done
 
