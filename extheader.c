@@ -171,11 +171,11 @@ int ID3V240_ReadExtendedHeader(ID3V2 *id3)
         fread(&flagdatasize, 1, 1, id3->file); // This byte is always 1
         if(flagdatasize != 1)
         {
-            fprintf(stderr, "Attached data for CRC-Flag is not 1 as specified! (actually %i)\n", flagdatasize);
+            fprintf(stderr, "Attached data for RESTRICTED-Flag is not 1 as specified! (actually %i)\n", flagdatasize);
             return ID3V2ERROR_NOTSUPPORTED;
         }
         unsigned char restrictions;
-        fread(&restrictions, 1, 5, id3->file);
+        fread(&restrictions, 1, 1, id3->file);
         id3->extheader.restrictions = restrictions;
     }
     else
