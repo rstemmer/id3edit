@@ -1,9 +1,9 @@
-#!/usr/bin/env bash
+#!/bin/sh
 
 INSTALLPATH=/usr/local/bin
 
 for SOURCE in id3edit id3show id3frames id3dump ; do
-    install -m 755 -v -g root -o root $SOURCE $INSTALLPATH
+    install -m 755 -v -o root $SOURCE $INSTALLPATH
 done
 
 strip $INSTALLPATH/id3edit

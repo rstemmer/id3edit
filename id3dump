@@ -1,15 +1,15 @@
-#!/usr/bin/env bash
+#!/bin/sh
 
 ID3EDIT="id3edit"
-ARG="$1"
-FILE="$2"
+ARG=$1
+FILE=$2
 
-if [ "$ARG" == "--help" ] || [ "$ARG" == "-h" ] ; then
+if [ "$ARG" = "--help" -o "$ARG" = "-h" ]; then
     $ID3EDIT --help
     exit 0
 fi
 
-if [ "$ARG" == "--version" ] || [ "$ARG" == "-v" ] ; then
+if [ "$ARG" = "--version" -o "$ARG" = "-v" ]; then
     $ID3EDIT --version
     exit 0
 fi
