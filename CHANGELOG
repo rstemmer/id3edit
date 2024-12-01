@@ -1,3 +1,5 @@
+2.2.1  - Scripts are now POSIX-compliant. Successful compilation on BSD by tr0pe <holahell90@gmail.com>
+       - Fixed a critical bug (buffer overflow by 4 bytes) when reading restrictions flags (a probably never used feature).
 2.2.0  - id3edit code ported to MacOS by Slava Baryshnikov <slava-bz@amlora.com>
          +- encoding tests ported to MacOS
          +- id3edit tests ported to MacOS

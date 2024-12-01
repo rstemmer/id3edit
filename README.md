@@ -56,8 +56,10 @@ I separated id3edit from the [MusicDB Project](https://github.com/rstemmer/music
 **Execution environment:**
 
  * Linux
- * macOS
+ * MacOS
     * Ported by [Slava Baryshnikov (SeventyB)](https://github.com/SeventyB)
+ * BSD
+    * Ported by [Joel Demacky (tr0pe)](https://github.com/tr0pe)
  * Docker
     * Maintained by [Hendri Kurniawan (hckurniawan)](https://github.com/hckurniawan)
     * Dockerfile: [github.com/hckurniawan/docker-id3edit](https://github.com/hckurniawan/docker-id3edit)
