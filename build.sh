@@ -2,7 +2,7 @@
 
 SOURCE=$(find . -type f ! -path './test/*' -name "*.c")
 HEADER="-I. -I/usr/local/include"
-if [ "$(uname)" = "Linux" ]; then
+if [ "$(uname)" = "Linux" -o "$(uname)" = "NetBSD" ]; then
     LIBS="-L/usr/local/lib -lprinthex -lz"
 else
     LIBS="-L/usr/local/lib -lz -liconv -lprinthex"
